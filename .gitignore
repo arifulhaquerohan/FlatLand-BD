@@ -1,0 +1,15 @@
+venv/
+.venv/
+node_modules/
+__pycache__/
+instance/*.db
+*.pyc
+.env
+.DS_Store
+*.swp
+*.bak
+*.log
+static/uploads/
+frontend/static/uploads/
+backups/
+CLOUDINARY.md

@@ -1,0 +1,188 @@
+{% extends "admin_base.html" %}
+{% set admin_nav = 'flats' %}
+
+{% block admin_page_title %}Edit flat #{{ item.id }}{% endblock %}
+{% block admin_kicker %}Flats · Moderate{% endblock %}
+{% block admin_page_description %}{{ item.title }} — {{ item.location }}{% endblock %}
+
+{% block admin_header_actions %}
+<a class="btn btn--sm btn--ghost" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">
+  <svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg> Back to flats
+</a>
+{% if item.status == 'approved' %}
+<a class="btn btn--sm btn--soft" href="{{ url_for('public.flat_detail', id=item.id) }}" target="_blank" rel="noopener">
+  <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg> View live
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('admin.edit_listing', item_type='flat', id=item.id) }}"
+      enctype="multipart/form-data" data-veil>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="edit-grid">
+    <div class="stack">
+
+      <section class="panel">
+        <header class="panel__head">
+          <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-file"></use></svg> Listing details</h2>
+          <span class="pill-status pill-status--{{ 'live' if item.status == 'approved' else 'off' if item.status == 'rejected' else 'partial' }}">
+            {{ item.status | capitalize }}
+          </span>
+        </header>
+
+        <div class="form-grid">
+          <label class="field span-2">
+            <span class="field__label">Title</span>
+            <input class="input" type="text" name="title" maxlength="160" required value="{{ item.title or '' }}">
+          </label>
+
+          <label class="field span-2">
+            <span class="field__label">Location</span>
+            <input class="input" type="text" name="location" maxlength="160" required value="{{ item.location or '' }}">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Price (৳)</span>
+            <input class="input" type="number" name="price" min="0" step="1000" value="{{ item.price or '' }}">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Bedrooms (BHK)</span>
+            <input class="input" type="number" name="bhk" min="0" max="20" value="{{ item.bhk or '' }}">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Area (sqft)</span>
+            <input class="input" type="number" name="area_sqft" min="0" step="10" value="{{ item.area_sqft or '' }}">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Status</span>
+            <select class="select" name="status">
+              <option value="pending" {{ 'selected' if item.status == 'pending' else '' }}>Pending review</option>
+              <option value="approved" {{ 'selected' if item.status == 'approved' else '' }}>Approved · live</option>
+              <option value="rejected" {{ 'selected' if item.status == 'rejected' else '' }}>Rejected</option>
+            </select>
+          </label>
+
+          <label class="field span-2">
+            <span class="field__label">YouTube walkthrough URL</span>
+            <input class="input" type="url" name="video_url" value="{{ item.video_url or '' }}" placeholder="https://youtu.be/…">
+          </label>
+
+          <label class="field span-2">
+            <span class="field__label">Description</span>
+            <textarea class="textarea" name="description" rows="8" id="flat-description"
+                      data-counter-for="flat-desc-count">{{ item.description or '' }}</textarea>
+            <span class="field__hint"><span id="flat-desc-count">0</span> characters</span>
+          </label>
+        </div>
+
+        <div class="row row--tight">
+          <button class="btn btn--sm btn--soft" type="button"
+                  data-ai-generate="{{ url_for('admin.generate_description') }}"
+                  data-ai-target="#flat-description"
+                  data-ai-notes="#flat-description">
+            <svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+            <span data-ai-label>Rewrite with AI</span>
+          </button>
+          <span class="body-sm muted">Uses the current text as the brief.</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel__head">
+          <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg> Photos</h2>
+          <span class="body-sm muted">{{ (item.images | length) + (1 if item.image_url else 0) }} on file</span>
+        </header>
+
+        <label class="field">
+          <span class="field__label">Cover image URL</span>
+          <input class="input" type="url" name="image_url" value="{{ item.image_url or '' }}" placeholder="https://…">
+        </label>
+
+        <label class="dropzone dropzone--sm" for="cover-file">
+          <input class="dropzone__input" id="cover-file" type="file" name="image_file"
+                 accept="image/png,image/jpeg,image/webp"
+                 data-file-names="#cover-name" data-file-thumbs="#cover-thumbs" data-max-thumbs="1">
+          <span class="dropzone__ic"><svg class="i" aria-hidden="true"><use href="#i-upload"></use></svg></span>
+          <span class="dropzone__title">Replace cover photo</span>
+          <span class="dropzone__hint">JPG, PNG or WEBP · optimised automatically</span>
+          <span class="dropzone__names" id="cover-name"></span>
+        </label>
+        <div class="thumbs" id="cover-thumbs"></div>
+
+        <label class="dropzone dropzone--sm" for="gallery-files">
+          <input class="dropzone__input" id="gallery-files" type="file" name="image_files" multiple
+                 accept="image/png,image/jpeg,image/webp"
+                 data-file-names="#gallery-names" data-file-thumbs="#gallery-thumbs" data-max-thumbs="10">
+          <span class="dropzone__ic"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg></span>
+          <span class="dropzone__title">Add gallery photos</span>
+          <span class="dropzone__hint">Up to {{ config.MAX_GALLERY_IMAGES }} per listing</span>
+          <span class="dropzone__names" id="gallery-names"></span>
+        </label>
+        <div class="thumbs" id="gallery-thumbs"></div>
+
+        <label class="field">
+          <span class="field__label">Add image links (one per line)</span>
+          <textarea class="textarea" name="image_urls" rows="3" placeholder="https://…/room.jpg"></textarea>
+        </label>
+
+        {% if item.images %}
+        <div class="gal-manage">
+          <p class="field__label">Existing gallery — tick to remove on save</p>
+          <div class="media-grid">
+            {% for img in item.images %}
+            <label class="asset">
+              <input type="checkbox" name="remove_image_ids" value="{{ img.id }}">
+              <img src="{{ optimized_image_url(img.image_url, 320) }}" alt="" loading="lazy" decoding="async">
+              <span class="asset__mark"><svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg></span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="stack">
+      <section class="panel panel--sticky">
+        <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Save changes</h2>
+        <p class="body-sm muted">Status changes take effect on the public site immediately.</p>
+        <button class="btn btn--block btn-arrow" type="submit">
+          Save listing <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        </button>
+        <a class="btn btn--block btn--ghost" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">Cancel</a>
+      </section>
+
+      <section class="panel">
+        <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-info"></use></svg> Record</h2>
+        <dl class="kv">
+          <div><dt>ID</dt><dd>#{{ item.id }}</dd></div>
+          <div><dt>Created</dt><dd>{{ item.created_at.strftime('%d %b %Y, %H:%M') if item.created_at else '—' }}</dd></div>
+          <div><dt>Owner</dt><dd>{{ item.owner.full_name if item.owner else 'Admin' }}</dd></div>
+          <div><dt>Gallery</dt><dd>{{ item.images | length }} extra photos</dd></div>
+          <div><dt>Cover host</dt><dd>{{ 'Cloudinary CDN' if item.image_url and 'res.cloudinary.com' in item.image_url else ('Local / external' if item.image_url else 'None') }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel panel--danger">
+        <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg> Danger zone</h2>
+        <p class="body-sm muted">Deleting removes the listing and its gallery permanently.</p>
+      </section>
+    </aside>
+  </div>
+</form>
+
+<form method="POST" action="{{ url_for('admin.delete_listing', item_type='flat', id=item.id) }}" class="danger-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn--sm btn--danger" type="submit"
+          data-confirm="Listing #{{ item.id }} and its photos will be permanently deleted."
+          data-confirm-title="Delete this flat?"
+          data-confirm-ok-label="Delete permanently">
+    <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg> Delete this listing
+  </button>
+</form>
+{% endblock %}

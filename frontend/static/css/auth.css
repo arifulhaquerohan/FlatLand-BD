@@ -1,0 +1,263 @@
+/* ==========================================================================
+   FlatLand BD — Sign in / Create account
+   Immersive, animated, light-only auth screens.
+   ========================================================================== */
+
+.authx {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh; /* mobile address-bar safe */
+  display: grid;
+  place-items: center;
+  padding: clamp(24px, 6vw, 72px) clamp(16px, 4vw, 40px);
+  overflow: hidden;
+  background:
+    radial-gradient(1100px 560px at 12% -8%, rgba(213, 123, 76, .10), transparent 60%),
+    radial-gradient(900px 640px at 108% 12%, rgba(47, 107, 87, .08), transparent 55%),
+    var(--canvas);
+}
+
+/* Animated background -------------------------------------------------- */
+.authx__bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+/* Soft orbs use radial gradients instead of blur filters: cheaper to paint
+   and no flicker on reload or mobile. */
+.authx__orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+  pointer-events: none;
+}
+.authx__orb--a {
+  width: 560px; height: 560px; left: -180px; top: -200px;
+  background: radial-gradient(circle at 40% 40%, rgba(213, 123, 76, .34), rgba(213, 123, 76, 0) 68%);
+  animation: authx-drift 26s ease-in-out infinite alternate;
+}
+.authx__orb--b {
+  width: 480px; height: 480px; right: -160px; top: 6%;
+  background: radial-gradient(circle at 60% 40%, rgba(242, 181, 123, .36), rgba(242, 181, 123, 0) 68%);
+  animation: authx-drift 30s ease-in-out infinite alternate-reverse;
+}
+.authx__orb--c {
+  width: 420px; height: 420px; left: 24%; bottom: -200px;
+  background: radial-gradient(circle at 50% 50%, rgba(47, 107, 87, .20), rgba(47, 107, 87, 0) 68%);
+  animation: authx-drift 34s ease-in-out infinite alternate;
+}
+.authx__grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(31, 39, 34, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 39, 34, .045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 42%, #000, transparent 76%);
+  mask-image: radial-gradient(ellipse at 50% 42%, #000, transparent 76%);
+}
+
+/* Floating chips ------------------------------------------------------- */
+.authx__chip {
+  position: absolute; z-index: 1;
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  font-size: .82rem; font-weight: 600; color: var(--ink-2);
+  animation: authx-float 6s ease-in-out infinite;
+}
+.authx__chip .i { width: 17px; height: 17px; color: var(--clay-strong); flex: none; }
+.authx__chip--tl { top: 13%; left: 7%; }
+.authx__chip--br { bottom: 15%; right: 6%; animation-delay: -3s; }
+@media (max-width: 1080px) { .authx__chip { display: none; } }
+
+/* Card ----------------------------------------------------------------- */
+.authx__card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 460px;
+  padding: clamp(28px, 5vw, 46px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-2);
+  animation: authx-rise .7s var(--ease) backwards;
+}
+.authx__card--wide { max-width: 520px; }
+
+.authx__brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: var(--s5); }
+.authx__brand-mark { animation: authx-float 5s ease-in-out infinite; }
+.authx__brand-name { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.authx__brand-name span { color: var(--clay-strong); }
+
+.authx__head { display: grid; gap: var(--s2); margin-bottom: var(--s5); }
+.authx__kicker {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: .76rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--clay-strong);
+}
+.authx__kicker .i { width: 15px; height: 15px; }
+.authx__title { font-family: var(--font-display); font-size: clamp(1.7rem, 3.4vw, 2.15rem); line-height: 1.12; letter-spacing: -.015em; color: var(--ink); margin: 0; }
+.authx__lead { color: var(--muted); font-size: .96rem; margin: 0; max-width: 38ch; }
+
+.authx__form { display: grid; gap: var(--s4); }
+.authx__field { display: grid; gap: 7px; }
+.authx__label { font-size: .84rem; font-weight: 600; color: var(--ink-2); }
+
+.authx__row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.authx__submit { margin-top: var(--s1); }
+
+.authx__alt { font-size: .9rem; color: var(--muted); text-align: center; margin: 0; }
+.authx__alt a { color: var(--clay-strong); font-weight: 600; text-decoration: none; }
+.authx__alt a:hover { text-decoration: underline; }
+.authx__fine { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: .76rem; color: var(--faint); text-align: center; margin: 0; }
+.authx__fine .i { width: 14px; height: 14px; flex: none; }
+
+/* Staggered entrance — fill-mode backwards means content stays visible
+   if an animation is ever interrupted, so there is no blank flash. */
+.authx__field, .authx__row, .authx__submit, .authx__alt, .authx__fine {
+  animation: authx-rise .6s var(--ease) backwards;
+  animation-delay: calc(.18s + var(--d, 0) * .07s);
+}
+
+/* Hide site chrome on auth pages --------------------------------------- */
+body.is-auth .masthead,
+body.is-auth .footer,
+body.is-auth .dock,
+body.is-auth .fab-stack { display: none; }
+
+/* Keyframes ------------------------------------------------------------- */
+@keyframes authx-rise {
+  from { opacity: 0; transform: translateY(26px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes authx-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(44px, 34px) scale(1.14); }
+}
+@keyframes authx-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authx__orb, .authx__chip, .authx__brand-mark { animation: none; }
+  .authx__card, .authx__field, .authx__row, .authx__submit, .authx__alt, .authx__fine { animation: none; }
+}
+
+/* Mobile polish --------------------------------------------------------- */
+@media (max-width: 640px) {
+  .authx { padding: 20px 16px; }
+  .authx__card { padding: 28px 22px; border-radius: var(--r-lg); }
+  .authx__title { font-size: 1.6rem; }
+  .authx__orb--a { width: 320px; height: 320px; left: -140px; top: -140px; }
+  .authx__orb--b { width: 280px; height: 280px; right: -120px; top: 4%; }
+  .authx__orb--c { width: 240px; height: 240px; left: 10%; bottom: -140px; }
+  .authx__grid { background-size: 44px 44px; }
+  .authx__brand { margin-bottom: var(--s4); }
+  .authx__head { margin-bottom: var(--s4); }
+  .uname__input { padding-left: 28px; }
+  .phonebd__flag b { display: none; }
+  .phonebd__input { padding-left: 48px; }
+}
+
+/* ======================================================================
+   Username + Bangladeshi mobile controls
+   ====================================================================== */
+.authx__label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.authx__tag {
+  font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  background: var(--surface-3); color: var(--muted); border: 1px solid var(--line);
+}
+.authx__tag--lock {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--sage); background: rgba(47, 107, 87, .09); border-color: rgba(47, 107, 87, .22);
+}
+.authx__tag--lock .i { width: 11px; height: 11px; }
+
+/* ---- @username ------------------------------------------------------- */
+.uname { position: relative; }
+.uname__at {
+  position: absolute; left: 14px; font-weight: 700; color: var(--faint);
+  pointer-events: none; transition: color var(--t-fast) var(--ease);
+}
+.uname:focus-within .uname__at { color: var(--clay); }
+.uname__input { width: 100%; padding-left: 31px; padding-right: 44px; }
+
+.uname__state {
+  position: absolute; right: 13px; display: grid; place-items: center;
+  width: 20px; height: 20px; pointer-events: none;
+}
+.uname__ic {
+  grid-area: 1 / 1; width: 19px; height: 19px; opacity: 0; transform: scale(.4);
+  transition: opacity var(--t-fast) var(--ease), transform var(--t-mid) var(--ease);
+}
+.uname__ic--ok  { color: var(--sage); }
+.uname__ic--bad { color: var(--rose); }
+.uname__spin {
+  grid-area: 1 / 1; width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--line-strong); border-top-color: var(--clay);
+  opacity: 0; transition: opacity var(--t-fast) var(--ease);
+}
+.uname.is-checking .uname__spin { opacity: 1; animation: uname-spin .68s linear infinite; }
+.uname.is-ok  .uname__ic--ok  { opacity: 1; transform: scale(1); }
+.uname.is-bad .uname__ic--bad { opacity: 1; transform: scale(1); }
+.uname.is-ok  .uname__input { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(47, 107, 87, .13); }
+.uname.is-bad .uname__input { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(173, 60, 50, .12); }
+
+@keyframes uname-spin { to { transform: rotate(360deg); } }
+
+[data-uname-msg].is-ok  { color: var(--sage); font-weight: 600; }
+[data-uname-msg].is-bad { color: var(--rose); font-weight: 600; }
+
+.uname__ideas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.uname__ideas b { font-size: .74rem; font-weight: 700; color: var(--muted); }
+.uname__idea {
+  font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  border: 1px dashed var(--line-strong); background: var(--surface-2); color: var(--ink-2);
+  transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  animation: idea-pop .32s var(--ease) backwards;
+}
+.uname__idea:hover {
+  background: var(--clay); color: var(--on-clay); border-color: var(--clay);
+  border-style: solid; transform: translateY(-2px);
+}
+@keyframes idea-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+
+/* ---- Bangladeshi mobile ---------------------------------------------- */
+.phonebd { position: relative; }
+.phonebd__flag {
+  position: absolute; left: 12px; display: inline-flex; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+.phonebd__flag svg { border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .08); }
+.phonebd__flag b { font-size: .74rem; font-weight: 700; letter-spacing: .05em; color: var(--muted); }
+.phonebd__input {
+  width: 100%; padding-left: 74px; padding-right: 52px;
+  letter-spacing: .08em; font-variant-numeric: tabular-nums;
+}
+.phonebd__count {
+  position: absolute; right: 13px; font-size: .72rem; font-weight: 700;
+  color: var(--faint); font-variant-numeric: tabular-nums;
+  transition: color var(--t-fast) var(--ease);
+}
+.phonebd.is-ok  .phonebd__input { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(47, 107, 87, .13); }
+.phonebd.is-ok  .phonebd__count { color: var(--sage); }
+.phonebd.is-bad .phonebd__input { border-color: var(--rose); }
+.phonebd.is-bad .phonebd__count { color: var(--rose); }
+
+.phonebd__dots { display: flex; gap: 3px; margin-top: 7px; }
+.phonebd__dots i {
+  flex: 1 1 0; height: 3px; border-radius: 2px; background: var(--line);
+  transition: background var(--t-mid) var(--ease);
+}
+.phonebd__dots i.is-on { background: var(--clay); }
+.phonebd__dots.is-ok i.is-on { background: var(--sage); }
+
+[data-phone-msg].is-ok  { color: var(--sage); font-weight: 600; }
+[data-phone-msg].is-bad { color: var(--rose); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uname__spin, .uname__idea { animation: none; }
+}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% import "components/cards.html" as ui %}
+
+{% set wa_base = 'https://wa.me/8801712458794' %}
+{% set maps_base = 'https://www.google.com/maps' %}
+{% set hero_image = flat.image_url or 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1400&q=80' %}
+{% set meta_description = (flat.description | striptags | truncate(155, True)) if flat.description else (flat.title ~ ' in ' ~ flat.location ~ ' — verified flat on FlatLand BD.') %}
+{% set meta_image = optimized_image_url(hero_image, 1200) %}
+{% set meta_type = 'product' %}
+
+{% block title %}{{ flat.title }} in {{ flat.location }} | FlatLand BD{% endblock %}
+
+{% block content %}
+{% set gallery = [hero_image] + (flat.images | map(attribute='image_url') | list) %}
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "RealEstateListing",
+  "name": "{{ flat.title }}",
+  "description": "{{ (flat.description | striptags | truncate(200, True)) if flat.description else (flat.title ~ ' in ' ~ flat.location) }}",
+  "url": "{{ request.url }}",
+  "image": "{{ meta_image }}",
+  "offers": { "@type": "Offer", "price": "{{ flat.price }}", "priceCurrency": "BDT" },
+  "address": { "@type": "PostalAddress", "addressLocality": "{{ flat.location }}", "addressCountry": "BD" },
+  "numberOfRooms": {{ flat.bhk or 1 }},
+  "floorSize": { "@type": "QuantitativeValue", "value": {{ flat.area_sqft or 0 }}, "unitCode": "FTK" }
+}
+</script>
+
+<section class="detail">
+  <div class="shell">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="{{ url_for('public.index') }}">Home</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <a href="{{ url_for('public.flats') }}">Flats</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <span aria-current="page">{{ flat.title | truncate(38, True) }}</span>
+    </nav>
+
+    <div class="detail__grid">
+      <div class="detail__main">
+
+        <div class="gallery" data-gallery data-reveal>
+          <figure class="gallery__stage">
+            <img data-gallery-stage
+                 src="{{ optimized_image_url(gallery[0], 1400) }}"
+                 alt="{{ flat.title }}" width="1400" height="933" fetchpriority="high" decoding="async"
+                 data-zoom data-zoom-group="flat-{{ flat.id }}">
+            <span class="gallery__hint">
+              <svg class="i" aria-hidden="true"><use href="#i-maximize"></use></svg> Tap to enlarge
+            </span>
+            <span class="badge badge--glass gallery__badge">
+              <svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg> Verified listing
+            </span>
+          </figure>
+
+          {% if gallery | length > 1 %}
+          <div class="gallery__thumbs" role="list">
+            {% for shot in gallery %}
+            <button class="gallery__thumb {{ 'is-active' if loop.first else '' }}" type="button" role="listitem"
+                    data-gallery-thumb
+                    data-src="{{ optimized_image_url(shot, 1400) }}"
+                    data-srcset="{{ optimized_image_srcset(shot, (640, 900, 1400)) }}"
+                    aria-label="View photo {{ loop.index }}">
+              <img src="{{ optimized_image_url(shot, 240) }}" alt="" loading="lazy" decoding="async" width="240" height="180">
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="stack" data-reveal>
+          <div class="detail__title-row">
+            <div>
+              <p class="listing__meta">
+                <svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg> {{ flat.location }}
+              </p>
+              <h1 class="h1">{{ flat.title }}</h1>
+            </div>
+            <span class="badge badge--sage">
+              <svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Available
+            </span>
+          </div>
+
+          <div class="spec-grid">
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-bed"></use></svg>
+              <p class="spec__value">{{ flat.bhk or '—' }}</p>
+              <p class="spec__label">Bedrooms</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-ruler"></use></svg>
+              <p class="spec__value">{{ flat.area_sqft or '—' }}</p>
+              <p class="spec__label">Square feet</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-percent"></use></svg>
+              <p class="spec__value">
+                {% if flat.price and flat.area_sqft %}৳ {{ "{:,.0f}".format((flat.price | float) / (flat.area_sqft | float)) }}{% else %}—{% endif %}
+              </p>
+              <p class="spec__label">Per sqft</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>
+              <p class="spec__value">{{ gallery | length }}</p>
+              <p class="spec__label">Photos</p>
+            </div>
+          </div>
+
+          <div class="rich">
+            <h2 class="h3">About this flat</h2>
+            <p>{{ flat.description or 'The owner has not added a description yet. Message us and we will share the full details, floor plan, and visiting hours.' }}</p>
+          </div>
+
+          {% if video_embed_url %}
+          <div class="stack stack--sm">
+            <h2 class="h3">Walkthrough video</h2>
+            <div class="video-frame">
+              <iframe src="{{ video_embed_url }}" title="{{ flat.title }} walkthrough"
+                      loading="lazy" allowfullscreen
+                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+            {% if video_watch_url %}
+            <a class="link-arrow link-arrow--sm" href="{{ video_watch_url }}" target="_blank" rel="noopener">
+              Open on YouTube <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg>
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <div class="stack stack--sm">
+            <h2 class="h3">Neighbourhood</h2>
+            <div class="map-embed">
+              <iframe src="{{ maps_base }}?q={{ (flat.location ~ ', Bangladesh') | urlencode }}&amp;output=embed"
+                      title="Map of {{ flat.location }}" loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="aside-stack" data-reveal="right">
+        <div class="price-card">
+          <p class="kicker">Asking price</p>
+          <p class="price-card__value">{{ ui.price_tag(flat.price) }}</p>
+          {% if flat.area_sqft and flat.price %}
+          <p class="body-sm muted">৳ {{ "{:,.0f}".format((flat.price | float) / (flat.area_sqft | float)) }} per sqft · {{ flat.area_sqft }} sqft</p>
+          {% endif %}
+
+          <div class="stack stack--sm" style="margin-top:var(--s4)">
+            <a class="btn btn--block btn-arrow"
+               href="{{ wa_base }}?text={{ ('Hello FlatLand BD, I am interested in ' ~ flat.title ~ ' (' ~ flat.location ~ '). Is it still available?') | urlencode }}"
+               target="_blank" rel="noopener">
+              <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Ask on WhatsApp
+            </a>
+            <a class="btn btn--block btn--ghost" href="tel:+8801712458794">
+              <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg> Call the coordinator
+            </a>
+            <a class="btn btn--block btn--soft" href="{{ url_for('public.index') }}#contact">
+              <svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg> Book a site visit
+            </a>
+          </div>
+
+          <ul class="tick-list tick-list--sm">
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Photos verified on site</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> No charge to enquire</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Same-day visit slots</li>
+          </ul>
+        </div>
+
+        {% if flat.owner %}
+        <div class="owner">
+          <span class="avatar">{{ (flat.owner.full_name or 'FlatLand')[0] | upper }}</span>
+          <div>
+            <p class="owner__name">{{ flat.owner.full_name or 'FlatLand BD' }}</p>
+            <p class="body-sm muted">Listed {{ flat.created_at.strftime('%d %b %Y') if flat.created_at else 'recently' }}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="panel panel--tight">
+          <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg> Buyer safety</p>
+          <p class="body-sm">
+            Never pay an advance before visiting the flat and seeing ownership papers.
+            Our coordinator can attend the visit with you at no cost.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+{% if related_flats %}
+<section class="section section--tint">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Similar</p>
+        <h2 class="h1">More flats like this one</h2>
+      </div>
+      <a class="link-arrow" href="{{ url_for('public.flats') }}">
+        All flats <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+    </div>
+    <div class="listing-grid" data-reveal-group>
+      {% for item in related_flats %}{{ ui.flat_card(item) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

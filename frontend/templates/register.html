@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Create your free account | FlatLand BD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="authx">
+  <div class="authx__bg" aria-hidden="true">
+    <div class="authx__orb authx__orb--a"></div>
+    <div class="authx__orb authx__orb--b"></div>
+    <div class="authx__orb authx__orb--c"></div>
+    <div class="authx__grid"></div>
+  </div>
+
+  <div class="authx__chip authx__chip--tl" aria-hidden="true">
+    <svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+    No listing fee
+  </div>
+  <div class="authx__chip authx__chip--br" aria-hidden="true">
+    <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg>
+    Verified in 24 hours
+  </div>
+
+  <div class="authx__card authx__card--wide">
+    <a class="authx__brand" href="{{ url_for('public.index') }}" aria-label="FlatLand BD home">
+      <img class="authx__brand-mark" src="{{ static_url('img/logo-icon.svg') }}" alt="" width="42" height="42">
+      <span class="authx__brand-name">FlatLand<span>BD</span></span>
+    </a>
+
+    <div class="authx__head">
+      <p class="authx__kicker"><svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg> Free forever</p>
+      <h1 class="authx__title">Create your account</h1>
+      <p class="authx__lead">List once, reach real buyers. Our team reviews every submission before it goes live.</p>
+    </div>
+
+    {% if form and form.errors %}
+    <div class="note note--rose" style="margin-bottom:var(--s4)">
+      <svg class="i" aria-hidden="true"><use href="#i-alert-circle"></use></svg>
+      <div>
+        <strong>Please check these fields</strong>
+        <ul style="margin:var(--s1) 0 0;padding-left:1.1rem">
+          {% for field, errors in form.errors.items() %}
+            {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    <form class="authx__form" method="POST" action="{{ url_for('public.register') }}" data-veil>
+      {% if form %}{{ form.hidden_tag() }}{% else %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+      <div class="authx__field" style="--d:0">
+        <label class="authx__label" for="reg-name">Full name <em>*</em></label>
+        <span class="input-wrap">
+          <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-user"></use></svg>
+          <input class="input input--with-ic" id="reg-name" type="text" name="full_name" required maxlength="120"
+                 autocomplete="name" placeholder="e.g. Ariful Haque Rohan"
+                 data-username-seed
+                 value="{{ entered.full_name if entered and entered.full_name else '' }}">
+        </span>
+      </div>
+
+      <div class="authx__field" style="--d:1">
+        <label class="authx__label" for="reg-username">
+          Username <em>*</em>
+          <span class="authx__tag authx__tag--lock">
+            <svg class="i" aria-hidden="true"><use href="#i-lock"></use></svg> Reserved for you
+          </span>
+        </label>
+        <span class="input-wrap uname" data-uname>
+          <span class="uname__at" aria-hidden="true">@</span>
+          <input class="input uname__input" id="reg-username" type="text" name="username" required
+                 minlength="3" maxlength="20" pattern="[a-z0-9_]{3,20}"
+                 autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off"
+                 placeholder="rohan_dhaka"
+                 data-username-check="{{ url_for('public.username_available') }}"
+                 value="{{ entered.username if entered and entered.username else '' }}">
+          <span class="uname__state" data-uname-state aria-hidden="true">
+            <svg class="i uname__ic uname__ic--ok"><use href="#i-check-circle"></use></svg>
+            <svg class="i uname__ic uname__ic--bad"><use href="#i-alert-circle"></use></svg>
+            <span class="uname__spin"></span>
+          </span>
+        </span>
+        <span class="field__hint" data-uname-msg role="status" aria-live="polite">3–20 characters · lowercase letters, numbers and underscore. Sign in with this instead of your number.</span>
+        <span class="uname__ideas" data-uname-ideas hidden></span>
+      </div>
+
+      <div class="authx__field" style="--d:2">
+        <label class="authx__label" for="reg-phone">Mobile number <em>*</em></label>
+        <span class="input-wrap phonebd" data-phonebd>
+          <span class="phonebd__flag" aria-hidden="true">
+            <svg viewBox="0 0 22 14" width="22" height="14" role="presentation">
+              <rect width="22" height="14" rx="2" fill="#0a6a4a"></rect>
+              <circle cx="9.6" cy="7" r="4.1" fill="#e8443a"></circle>
+            </svg>
+            <b>BD</b>
+          </span>
+          <input class="input phonebd__input" id="reg-phone" type="tel" name="phone" required
+                 autocomplete="tel" inputmode="numeric" minlength="11"
+                 pattern="01[3-9][0-9]{8}" placeholder="01712345678" data-bd-phone
+                 value="{{ entered.phone if entered and entered.phone else '' }}">
+          <span class="phonebd__count" data-phone-count aria-hidden="true">0/11</span>
+        </span>
+        <span class="phonebd__dots" data-phone-dots aria-hidden="true"></span>
+        <span class="field__hint" data-phone-msg>Exactly 11 digits, starting 013–019.</span>
+      </div>
+
+      <div class="authx__field" style="--d:3">
+        <label class="authx__label" for="reg-email">
+          Email
+          <span class="authx__tag">Optional</span>
+        </label>
+        <span class="input-wrap">
+          <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-mail"></use></svg>
+          <input class="input input--with-ic" id="reg-email" type="email" name="email"
+                 autocomplete="email" placeholder="you@example.com"
+                 value="{{ entered.email if entered and entered.email else '' }}">
+        </span>
+        <span class="field__hint">Leave it blank if you like — we only use it for approval updates.</span>
+      </div>
+
+      <div class="authx__field" style="--d:4">
+        <label class="authx__label" for="register-password">Password <em>*</em></label>
+        <span class="pw-wrap">
+          <input class="input" type="password" name="password" required autocomplete="new-password"
+                 minlength="8" placeholder="At least 8 characters" id="register-password">
+          <button class="pw-toggle" type="button" data-pw-toggle="#register-password" aria-label="Show password">
+            <svg class="i" aria-hidden="true"><use href="#i-eye"></use></svg>
+          </button>
+        </span>
+        <span class="strength" id="pw-strength" data-strength-for="register-password" aria-hidden="true">
+          <span class="strength__track">
+            <span class="strength__seg"></span>
+            <span class="strength__seg"></span>
+            <span class="strength__seg"></span>
+            <span class="strength__seg"></span>
+          </span>
+          <span class="strength__label" data-strength-label>Enter a password</span>
+        </span>
+      </div>
+
+      <label class="check check--block" style="--d:5">
+        <input type="checkbox" required>
+        <span>I confirm the details I publish are accurate and mine to list.</span>
+      </label>
+
+      <button class="btn btn--lg btn--block btn-arrow authx__submit" type="submit" style="--d:6">
+        Create my account
+        <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </button>
+
+      <p class="authx__alt" style="--d:7">
+        Already registered?
+        <a href="{{ url_for('public.login') }}">Sign in instead</a>
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

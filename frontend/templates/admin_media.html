@@ -1,0 +1,269 @@
+{% extends "admin_base.html" %}
+{% set admin_nav = 'media' %}
+{% set cloud_console = 'https://console.cloudinary.com/settings/api-keys' %}
+{% set cloud_signup = 'https://cloudinary.com/users/register_free' %}
+
+{% block admin_page_title %}Media library{% endblock %}
+{% block admin_kicker %}Storage and delivery{% endblock %}
+{% block admin_page_description %}Every photo the site serves, where it is stored, and whether the CDN is doing its job.{% endblock %}
+
+{% block admin_header_actions %}
+<button class="btn btn--sm btn--ghost" type="button"
+        data-test-endpoint="{{ url_for('admin.media_test') }}"
+        data-test-output="#cloud-test">
+  <svg class="i" aria-hidden="true"><use href="#i-activity"></use></svg>
+  <span data-test-label>Test connection</span>
+</button>
+<a class="btn btn--sm" href="{{ url_for('admin.system_health') }}">
+  <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg> System health
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===================== storage status ===================== -->
+<section class="cloud-hero {{ 'cloud-hero--is-live' if cloud.configured else 'cloud-hero--is-off' }}">
+  <div class="cloud-hero__main">
+    <div class="cloud-hero__ic">
+      <svg class="i" aria-hidden="true">
+        <use href="{{ '#i-cloud-check' if cloud.configured else '#i-cloud-off' }}"></use>
+      </svg>
+    </div>
+    <div class="stack stack--sm">
+      <span class="pill-status {{ 'pill-status--live' if cloud.configured else 'pill-status--off' }}">
+        <span class="pill-status__dot"></span>
+        {{ 'Cloudinary is live' if cloud.configured else 'Cloudinary is off' }}
+      </span>
+      <h2 class="h3">
+        {% if cloud.configured %}
+          Photos are served from the CDN
+        {% else %}
+          Photos are stored on this server
+        {% endif %}
+      </h2>
+      <p class="body-sm muted">
+        {% if cloud.configured %}
+          New uploads are converted to WebP, capped at 1600px and pushed to cloud
+          <b>{{ cloud.cloud_name }}</b> inside folder <b>{{ cloud.folder }}</b>. Visitors get an
+          automatically resized copy for their screen.
+        {% else %}
+          Uploads land in <b>static/uploads/</b> on your hosting disk. That works, but pages are
+          heavier, the disk fills up over time, and a redeploy can wipe the folder.
+          Adding three keys fixes all three problems.
+        {% endif %}
+      </p>
+
+      <ul class="cloud-hero__keys">
+        <li class="tick {{ 'tick--ok' if cloud.cloud_name else 'tick--bad' }}">
+          <svg class="i" aria-hidden="true"><use href="{{ '#i-check' if cloud.cloud_name else '#i-x' }}"></use></svg>
+          Cloud name
+        </li>
+        <li class="tick {{ 'tick--ok' if cloud.api_key_set else 'tick--bad' }}">
+          <svg class="i" aria-hidden="true"><use href="{{ '#i-check' if cloud.api_key_set else '#i-x' }}"></use></svg>
+          API key
+        </li>
+        <li class="tick {{ 'tick--ok' if cloud.api_secret_set else 'tick--bad' }}">
+          <svg class="i" aria-hidden="true"><use href="{{ '#i-check' if cloud.api_secret_set else '#i-x' }}"></use></svg>
+          API secret
+        </li>
+        <li class="tick {{ 'tick--ok' if cloud.sdk_available else 'tick--bad' }}">
+          <svg class="i" aria-hidden="true"><use href="{{ '#i-check' if cloud.sdk_available else '#i-x' }}"></use></svg>
+          Python library
+        </li>
+        {% if cloud.from_url %}
+        <li class="tick tick--ok">
+          <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+          Read from CLOUDINARY_URL
+        </li>
+        {% endif %}
+      </ul>
+
+      {% if cloud.sdk_error %}
+      <p class="note note--amber">
+        <svg class="i" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+        <span>Library problem: {{ cloud.sdk_error }}</span>
+      </p>
+      {% endif %}
+
+      <p class="note test-out" id="cloud-test" hidden></p>
+
+      <div class="row row--tight">
+        <button class="btn btn--sm" type="button"
+                data-test-endpoint="{{ url_for('admin.media_test') }}"
+                data-test-output="#cloud-test">
+          <svg class="i" aria-hidden="true"><use href="#i-zap"></use></svg>
+          <span data-test-label>Run connection test</span>
+        </button>
+        <a class="btn btn--sm btn--ghost" href="{{ cloud_console }}" target="_blank" rel="noopener">
+          <svg class="i" aria-hidden="true"><use href="#i-key"></use></svg> Cloudinary API keys
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== counts ===================== -->
+<div class="kpi-row">
+  <article class="kpi">
+    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg> Images in use</span>
+    <strong class="kpi__value" data-count="{{ media_stats.total }}">{{ media_stats.total }}</strong>
+    <span class="kpi__foot">Covers and galleries across flats and studios</span>
+  </article>
+
+  <article class="kpi kpi--sage">
+    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg> On the CDN</span>
+    <strong class="kpi__value" data-count="{{ media_stats.cloudinary }}">{{ media_stats.cloudinary }}</strong>
+    <span class="progress-rail"><span class="progress-rail__fill" data-bar="{{ media_stats.cloud_percent }}"></span></span>
+    <span class="kpi__foot">{{ media_stats.cloud_percent }}% of all images</span>
+  </article>
+
+  <article class="kpi {{ 'kpi--amber' if media_stats.local else '' }}">
+    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-database"></use></svg> On this server</span>
+    <strong class="kpi__value" data-count="{{ media_stats.local }}">{{ media_stats.local }}</strong>
+    <span class="kpi__foot">
+      {% if media_stats.local %}Uploaded before the CDN was on. Re-upload to move them.{% else %}Nothing sitting on your disk.{% endif %}
+    </span>
+  </article>
+
+  <article class="kpi">
+    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-globe"></use></svg> Linked from elsewhere</span>
+    <strong class="kpi__value" data-count="{{ media_stats.external }}">{{ media_stats.external }}</strong>
+    <span class="kpi__foot">Pasted addresses, including stock photos</span>
+  </article>
+</div>
+
+{% if not cloud.configured %}
+<!-- ===================== setup guide ===================== -->
+<section class="panel">
+  <header class="panel__head">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg> Turn on the CDN in four steps</h2>
+    <p class="body-sm muted">Ten minutes, once. Nothing breaks while it is off.</p>
+  </header>
+
+  <ol class="steps-list">
+    <li>
+      <b>Create a free account.</b>
+      <span class="muted">25 GB storage and 25 GB monthly delivery, far more than this site needs.</span>
+      <a class="link-arrow link-arrow--sm" href="{{ cloud_signup }}" target="_blank" rel="noopener">
+        Sign up <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+      </a>
+    </li>
+    <li>
+      <b>Copy three values</b> from Settings then API Keys: cloud name, API key, API secret.
+      <a class="link-arrow link-arrow--sm" href="{{ cloud_console }}" target="_blank" rel="noopener">
+        Open API keys <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+      </a>
+    </li>
+    <li>
+      <b>Paste them into your .env file</b> next to wsgi.py, then save.
+      <pre class="copy-row"><code>CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=123456789012345
+CLOUDINARY_API_SECRET=your-secret
+CLOUDINARY_FOLDER=flatlandbd/uploads
+MAX_UPLOAD_MB=24</code></pre>
+    </li>
+    <li>
+      <b>In cPanel, run Pip Install and then Restart.</b>
+      <span class="muted">Come back here and press Run connection test. Green means done.</span>
+    </li>
+  </ol>
+</section>
+{% endif %}
+
+<!-- ===================== the grid ===================== -->
+<section class="panel panel--flush">
+  <header class="panel__head panel__head--pad">
+    <div>
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-folder"></use></svg> All images</h2>
+      <p class="body-sm muted">Newest first. Click a card to edit the listing it belongs to.</p>
+    </div>
+    <span class="badge badge--glass">{{ media_stats.total }} total</span>
+  </header>
+
+  {% if media_items %}
+  <div class="media-grid media-grid--pad">
+    {% for item in media_items %}
+    <figure class="asset">
+      <a class="asset--view" href="{{ item.url }}" target="_blank" rel="noopener"
+         aria-label="Open full size image for {{ item.title }}">
+        <img src="{{ optimized_image_url(item.url, 400) }}" alt="" loading="lazy" decoding="async">
+        <span class="asset__mark" title="{{ item.provider | capitalize }}">
+          <svg class="i" aria-hidden="true">
+            <use href="{% if item.provider == 'cloudinary' %}#i-cloud-check{% elif item.provider == 'local' %}#i-database{% else %}#i-globe{% endif %}"></use>
+          </svg>
+        </span>
+      </a>
+      <figcaption>
+        <span class="asset__title">{{ item.title }}</span>
+        <span class="asset__meta">{{ item.kind }} &middot; {{ item.provider }}</span>
+        {% if item.edit_url %}
+        <a class="asset__go" href="{{ item.edit_url }}">
+          <svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg> Edit listing
+        </a>
+        {% endif %}
+      </figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+
+  {% if has_prev or has_next %}
+  <nav class="pager pager--pad" aria-label="Media pages">
+    {% if has_prev %}
+    <a class="btn btn--sm btn--ghost" href="{{ prev_url }}">
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-left"></use></svg> Newer
+    </a>
+    {% endif %}
+    <span class="pager__status">Page {{ page }}</span>
+    {% if has_next %}
+    <a class="btn btn--sm btn--ghost" href="{{ next_url }}">
+      Older <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty empty--inline">
+    <div class="empty__art"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg></div>
+    <h3 class="h4">No images yet</h3>
+    <p class="body-sm muted">Approve a listing with photos, or post one yourself, and it will appear here.</p>
+    <a class="btn btn--sm" href="{{ url_for('public.post_listing') }}">
+      <svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg> Post a listing
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ===================== housekeeping ===================== -->
+<div class="grid grid--split-wide">
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg> What happens automatically</h2>
+    </header>
+    <ul class="tick-list tick-list--sm">
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Every upload is converted to WebP and capped at 1600px, so a 6 MB phone photo becomes a few hundred KB.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Visitors receive a size that matches their screen, chosen from a srcset.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Deleting a listing or a gallery photo also deletes the file from storage, so nothing is orphaned.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        If Cloudinary is unreachable mid-upload, the photo is saved locally instead of being lost.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-info"></use></svg> Current settings</h2>
+    </header>
+    <dl class="kv">
+      <div><dt>Storage</dt><dd>{{ 'Cloudinary CDN' if cloud.configured else 'This server' }}</dd></div>
+      <div><dt>Cloud name</dt><dd>{{ cloud.cloud_name or 'not set' }}</dd></div>
+      <div><dt>Folder</dt><dd>{{ cloud.folder }}</dd></div>
+      <div><dt>Upload limit</dt><dd>{{ config.MAX_UPLOAD_MB }} MB per submit</dd></div>
+      <div><dt>Photos per listing</dt><dd>{{ config.MAX_GALLERY_IMAGES }} max</dd></div>
+      <div><dt>Format</dt><dd>WebP, quality auto</dd></div>
+    </dl>
+  </section>
+</div>
+{% endblock %}

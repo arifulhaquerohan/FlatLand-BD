@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% set can_interior = can_post_interior | default(false) %}
+{% set s_type = 0 %}
+{% set s_details = 1 if can_interior else 0 %}
+{% set s_photos = 2 if can_interior else 1 %}
+{% set step_total = 3 if can_interior else 2 %}
+
+{% block title %}{% if can_interior %}Post a listing{% else %}Post your flat{% endif %} | FlatLand BD{% endblock %}
+
+{% block content %}
+<section class="section section--flush">
+  <div class="shell shell--tight">
+
+    <div class="stack stack--sm" data-reveal>
+      <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-plus-circle"></use></svg> New submission</p>
+      {% if can_interior %}
+        <h1 class="display display--sm">Publish a flat or an interior studio</h1>
+        <p class="lead">Three short steps. Our team reviews everything before it goes live — usually within 24 hours.</p>
+      {% else %}
+        <h1 class="display display--sm">Publish your flat</h1>
+        <p class="lead">Two short steps. Our team reviews every flat before it goes live — usually within 24 hours.</p>
+      {% endif %}
+    </div>
+
+    <form class="wizard" method="POST" action="{{ url_for('public.post_listing') }}"
+          enctype="multipart/form-data" data-wizard data-veil data-reveal>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if not can_interior %}<input type="hidden" name="form_type" value="flat">{% endif %}
+
+      <ol class="wizard__rail" aria-label="Progress" data-steps="{{ step_total }}">
+        <span class="wizard__bar" aria-hidden="true"><i data-wizard-bar></i></span>
+        {% if can_interior %}
+        <li class="wizard__pip is-active" data-wizard-pip="{{ s_type }}"><span>1</span> Type</li>
+        {% endif %}
+        <li class="wizard__pip{% if not can_interior %} is-active{% endif %}" data-wizard-pip="{{ s_details }}"><span>{{ s_details + 1 }}</span> Details</li>
+        <li class="wizard__pip" data-wizard-pip="{{ s_photos }}"><span>{{ s_photos + 1 }}</span> Photos</li>
+      </ol>
+
+      {% if can_interior %}
+      <!-- ------------------------------------------- STEP 1 (admin only) -->
+      <fieldset class="wizard__step is-current" data-wizard-step="{{ s_type }}">
+        <legend class="h3">What are you listing?</legend>
+
+        <div class="type-picker">
+          <label class="type-opt">
+            <input type="radio" name="form_type" value="flat" checked data-type-switch>
+            <span class="type-opt__body">
+              <svg class="i type-opt__ic" aria-hidden="true"><use href="#i-building"></use></svg>
+              <strong>A flat</strong>
+              <small>Apartment for sale or rent, with area, BHK, and price.</small>
+            </span>
+          </label>
+
+          <label class="type-opt">
+            <input type="radio" name="form_type" value="interior" data-type-switch>
+            <span class="type-opt__body">
+              <svg class="i type-opt__ic" aria-hidden="true"><use href="#i-couch"></use></svg>
+              <strong>An interior studio</strong>
+              <small>Design service profile, speciality, and starting price.</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="note note--info">
+          <svg class="i" aria-hidden="true"><use href="#i-info"></use></svg>
+          <div>Interior studio profiles are admin-only. Members publish flats.</div>
+        </div>
+
+        <div class="wizard__nav">
+          <span></span>
+          <button class="btn btn-arrow" type="button" data-wizard-next>
+            Continue <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+          </button>
+        </div>
+      </fieldset>
+      {% endif %}
+
+      <!-- ---------------------------------------------------- DETAILS -->
+      <fieldset class="wizard__step{% if not can_interior %} is-current{% endif %}" data-wizard-step="{{ s_details }}">
+        <legend class="h3">The details</legend>
+
+        {% if not can_interior %}
+        <div class="listing-badge">
+          <span class="listing-badge__ic"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg></span>
+          <div>
+            <strong>You're listing a flat</strong>
+            <small>Apartment for sale or rent — area, bedrooms and price.</small>
+          </div>
+          <span class="listing-badge__tick"><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg></span>
+        </div>
+        {% endif %}
+
+        <!-- flat fields -->
+        <div data-type-block="flat">
+          <div class="form-grid-2">
+            <label class="field">
+              <span class="field__label">Listing title <em>*</em></span>
+              <input class="input" type="text" name="title" maxlength="160"
+                     placeholder="e.g. South-facing 3 BHK near Dhanmondi Lake"
+                     {% if can_interior %}data-required-when-visible{% else %}required{% endif %}>
+            </label>
+            <label class="field">
+              <span class="field__label">Area / location <em>*</em></span>
+              <span class="input-wrap">
+                <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-map-pin"></use></svg>
+                <input class="input input--with-ic" type="text" name="location" maxlength="160"
+                       placeholder="e.g. Dhanmondi, Dhaka"
+                       {% if can_interior %}data-required-when-visible{% else %}required{% endif %}>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-grid-3">
+            <label class="field">
+              <span class="field__label">Price (৳) <em>*</em></span>
+              <input class="input" type="number" name="price" min="0" step="1000" inputmode="numeric"
+                     placeholder="9500000"
+                     {% if can_interior %}data-required-when-visible{% else %}required{% endif %}>
+            </label>
+            <label class="field">
+              <span class="field__label">Bedrooms</span>
+              <select class="select" name="bhk">
+                <option value="">Select</option>
+                <option value="1">1 BHK</option>
+                <option value="2">2 BHK</option>
+                <option value="3">3 BHK</option>
+                <option value="4">4 BHK</option>
+                <option value="5">5+ BHK</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">Area (sqft)</span>
+              <input class="input" type="number" name="area" min="0" step="10" inputmode="numeric" placeholder="1450">
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">YouTube walkthrough (optional)</span>
+            <span class="input-wrap">
+              <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-play"></use></svg>
+              <input class="input input--with-ic" type="url" name="video_url" placeholder="https://youtu.be/…">
+            </span>
+          </label>
+        </div>
+
+        {% if can_interior %}
+        <!-- interior fields (admin only) -->
+        <div data-type-block="interior" hidden>
+          <div class="form-grid-2">
+            <label class="field">
+              <span class="field__label">Studio / provider name <em>*</em></span>
+              <input class="input" type="text" name="provider_name" maxlength="160"
+                     placeholder="e.g. Nokshabari Interiors" data-required-when-visible>
+            </label>
+            <label class="field">
+              <span class="field__label">Speciality <em>*</em></span>
+              <input class="input" type="text" name="service_type" maxlength="120"
+                     placeholder="Full home, kitchen, office fit-out…" data-required-when-visible>
+            </label>
+          </div>
+
+          <div class="form-grid-2">
+            <label class="field">
+              <span class="field__label">Starting price (৳)</span>
+              <input class="input" type="number" name="starting_price" min="0" step="1000"
+                     inputmode="numeric" placeholder="250000">
+            </label>
+            <label class="field">
+              <span class="field__label">Portfolio link</span>
+              <span class="input-wrap">
+                <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-external"></use></svg>
+                <input class="input input--with-ic" type="url" name="portfolio_url"
+                       placeholder="https://instagram.com/yourstudio">
+              </span>
+            </label>
+          </div>
+        </div>
+        {% endif %}
+
+        <label class="field">
+          <span class="field__label">Description <em>*</em></span>
+          <textarea class="textarea" name="description" rows="6" required maxlength="4000"
+                    id="listing-description" data-counter-for="desc-count"
+                    placeholder="Floor, facing, lift, parking, nearby landmarks, what makes it worth a visit…"></textarea>
+          <span class="field__hint"><span id="desc-count">0</span> / 4000 characters</span>
+        </label>
+
+        {% if current_user.is_authenticated and current_user.role == 'admin' %}
+        <button class="btn btn--sm btn--soft" type="button"
+                data-ai-generate="{{ url_for('admin.generate_description') }}"
+                data-ai-target="#listing-description"
+                data-ai-notes="#listing-description">
+          <svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+          <span data-ai-label>Draft it for me</span>
+        </button>
+        {% endif %}
+
+        <div class="wizard__nav">
+          {% if can_interior %}
+          <button class="btn btn--ghost" type="button" data-wizard-prev>
+            <svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg> Back
+          </button>
+          {% else %}
+          <span></span>
+          {% endif %}
+          <button class="btn btn-arrow" type="button" data-wizard-next>
+            Continue <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+          </button>
+        </div>
+      </fieldset>
+
+      <!-- ----------------------------------------------------- PHOTOS -->
+      <fieldset class="wizard__step" data-wizard-step="{{ s_photos }}">
+        <legend class="h3">Photos</legend>
+
+        <label class="dropzone" for="cover-file">
+          <input class="dropzone__input" id="cover-file" type="file" name="image_file"
+                 accept="image/png,image/jpeg,image/webp"
+                 data-file-names="#cover-name" data-file-thumbs="#cover-thumbs" data-max-thumbs="1">
+          <span class="dropzone__ic"><svg class="i" aria-hidden="true"><use href="#i-upload"></use></svg></span>
+          <span class="dropzone__title">Cover photo</span>
+          <span class="dropzone__hint">Drag a file here or click to browse · JPG, PNG, WEBP</span>
+          <span class="dropzone__names" id="cover-name"></span>
+        </label>
+        <div class="thumbs" id="cover-thumbs"></div>
+
+        <label class="field">
+          <span class="field__label">…or paste an image link</span>
+          <input class="input" type="url" name="image_url" placeholder="https://…/photo.jpg">
+        </label>
+
+        <label class="dropzone" for="gallery-files">
+          <input class="dropzone__input" id="gallery-files" type="file" name="image_files" multiple
+                 accept="image/png,image/jpeg,image/webp"
+                 data-file-names="#gallery-names" data-file-thumbs="#gallery-thumbs" data-max-thumbs="10">
+          <span class="dropzone__ic"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg></span>
+          <span class="dropzone__title">Gallery photos</span>
+          <span class="dropzone__hint">Up to {{ config.MAX_GALLERY_IMAGES }} images · rooms, balcony, kitchen, view</span>
+          <span class="dropzone__names" id="gallery-names"></span>
+        </label>
+        <div class="thumbs" id="gallery-thumbs"></div>
+
+        <label class="field">
+          <span class="field__label">Extra image links (one per line)</span>
+          <textarea class="textarea" name="image_urls" rows="3"
+                    placeholder="https://…/room-1.jpg&#10;https://…/room-2.jpg"></textarea>
+        </label>
+
+        <div class="note note--amber">
+          <svg class="i" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+          <div>Photos must show the actual property. Stock or borrowed images get rejected at review.</div>
+        </div>
+
+        <div class="wizard__nav">
+          <button class="btn btn--ghost" type="button" data-wizard-prev>
+            <svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg> Back
+          </button>
+          <button class="btn btn--lg btn-arrow" type="submit">
+            Submit for review
+            <svg class="i" aria-hidden="true"><use href="#i-send"></use></svg>
+          </button>
+        </div>
+      </fieldset>
+    </form>
+
+    <p class="body-sm muted" style="text-align:center;margin-top:var(--s5)">
+      <svg class="i" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-shield"></use></svg>
+      Submissions are private until approved. Maximum upload size {{ config.MAX_CONTENT_LENGTH // (1024 * 1024) }} MB per request.
+    </p>
+  </div>
+</section>
+{% endblock %}

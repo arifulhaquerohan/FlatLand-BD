@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% import "components/cards.html" as ui %}
+
+{% block title %}Verified flats for sale &amp; rent in Bangladesh | FlatLand BD{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="hero__mesh hero__mesh--soft" aria-hidden="true"></div>
+  <div class="shell">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="{{ url_for('public.index') }}">Home</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <span aria-current="page">Flats</span>
+    </nav>
+
+    <div class="page-head__grid">
+      <div class="stack stack--sm" data-reveal>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Live inventory</p>
+        <h1 class="display display--sm">Flats, checked before they reach you</h1>
+        <p class="lead">
+          {% if total_matches %}
+            <strong>{{ total_matches }}</strong> {{ 'flat' if total_matches == 1 else 'flats' }} match your filters.
+            Showing {{ page_listing_count }} on this page.
+          {% else %}
+            Filter by budget, size, and area — every result is a flat our team has verified.
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="page-head__aside" data-reveal="right">
+        <div class="panel panel--tight">
+          <p class="kicker">Cannot find it?</p>
+          <p class="body-sm">Send us the brief and we will match you privately within a day.</p>
+          <a class="btn btn--sm btn--block" href="{{ url_for('public.index') }}#contact">Request a match</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--flush">
+  <div class="shell">
+
+    <form class="filters" method="GET" action="{{ url_for('public.flats') }}" data-reveal>
+      <div class="filters__row">
+        <label class="field field--grow">
+          <span class="field__label">Search</span>
+          <span class="input-wrap">
+            <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-search"></use></svg>
+            <input class="input input--with-ic" type="search" name="search" value="{{ filters.search or '' }}"
+                   placeholder="Dhanmondi, lake view, 1400 sqft…">
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Bedrooms</span>
+          <select class="select" name="bhk" data-autosubmit>
+            <option value="all" {{ 'selected' if (filters.bhk or 'all') == 'all' else '' }}>Any</option>
+            <option value="1" {{ 'selected' if filters.bhk == '1' else '' }}>1 BHK</option>
+            <option value="2" {{ 'selected' if filters.bhk == '2' else '' }}>2 BHK</option>
+            <option value="3" {{ 'selected' if filters.bhk == '3' else '' }}>3 BHK</option>
+            <option value="4plus" {{ 'selected' if filters.bhk == '4plus' else '' }}>4+ BHK</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Min price (৳)</span>
+          <input class="input" type="number" name="min_price" min="0" step="50000"
+                 value="{{ filters.min_price or '' }}" placeholder="0" inputmode="numeric">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Max price (৳)</span>
+          <input class="input" type="number" name="max_price" min="0" step="50000"
+                 value="{{ filters.max_price or '' }}" placeholder="Any" inputmode="numeric">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Sort by</span>
+          <select class="select" name="sort" data-autosubmit>
+            <option value="newest" {{ 'selected' if sort == 'newest' else '' }}>Newest first</option>
+            <option value="price_low" {{ 'selected' if sort == 'price_low' else '' }}>Price: low to high</option>
+            <option value="price_high" {{ 'selected' if sort == 'price_high' else '' }}>Price: high to low</option>
+            <option value="area_high" {{ 'selected' if sort == 'area_high' else '' }}>Largest area</option>
+          </select>
+        </label>
+
+        <div class="filters__submit">
+          <button class="btn btn--block" type="submit">
+            <svg class="i" aria-hidden="true"><use href="#i-sliders"></use></svg> Apply
+          </button>
+        </div>
+      </div>
+
+      <div class="filters__chips">
+        <span class="filters__label">Quick picks</span>
+        <a class="chip" href="{{ url_for('public.flats', bhk='2', sort='price_low') }}">2 BHK, cheapest first</a>
+        <a class="chip" href="{{ url_for('public.flats', bhk='3') }}">Family 3 BHK</a>
+        <a class="chip" href="{{ url_for('public.flats', max_price=6000000) }}">Under ৳ 60 Lakh</a>
+        <a class="chip" href="{{ url_for('public.flats', sort='area_high') }}">Biggest first</a>
+      </div>
+    </form>
+
+    {% if filters_applied %}
+    <div class="active-filters" data-reveal>
+      <span class="body-sm muted">Filtering by</span>
+      {% if filters.search %}<span class="tag-x">“{{ filters.search }}”</span>{% endif %}
+      {% if filters.bhk and filters.bhk != 'all' %}<span class="tag-x">{{ '4+' if filters.bhk == '4plus' else filters.bhk }} BHK</span>{% endif %}
+      {% if filters.min_price %}<span class="tag-x">Min {{ filters.min_price | float | format_bdt }}</span>{% endif %}
+      {% if filters.max_price %}<span class="tag-x">Max {{ filters.max_price | float | format_bdt }}</span>{% endif %}
+      <a class="link-arrow link-arrow--sm" href="{{ url_for('public.flats') }}">
+        Clear all <svg class="i" aria-hidden="true"><use href="#i-x"></use></svg>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if flats %}
+      <div class="listing-grid" data-reveal-group>
+        {% for flat in flats %}{{ ui.flat_card(flat) }}{% endfor %}
+      </div>
+      {{ ui.pager(page, has_prev, has_next, prev_url, next_url) }}
+    {% elif filters_applied %}
+      {{ ui.empty_state(
+           'No matches',
+           'Nothing fits those filters yet',
+           'Try widening the budget or clearing the bedroom filter. You can also send us the brief and we will hunt for it.',
+           url_for('public.flats'), 'Clear filters',
+           url_for('public.index') ~ '#contact', 'Send a brief',
+           'search') }}
+    {% else %}
+      {{ ui.empty_state(
+           'Coming soon',
+           'The first flats are in review',
+           'Listings appear the moment our team approves them. Own a flat? Publish it free in about two minutes.',
+           url_for('public.post_listing'), 'Post a flat',
+           url_for('public.interior'), 'Browse studios',
+           'building') }}
+    {% endif %}
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="shell cta-band__inner" data-reveal>
+    <div>
+      <h2 class="h2">Want the shortlist sent to you instead?</h2>
+      <p class="lead">Tell us the area and budget once — we send three to five verified options on WhatsApp.</p>
+    </div>
+    <a class="btn btn--lg btn-arrow" href="{{ url_for('public.index') }}#contact">
+      Get a shortlist <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+    </a>
+  </div>
+</section>
+{% endblock %}

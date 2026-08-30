@@ -1,0 +1,133 @@
+{# Reusable presentation macros for listings and studios. #}
+
+{% macro price_tag(value, fallback='Price on request') -%}
+{%- if value -%}{{ value | float | format_bdt or ('৳ ' ~ "{:,.0f}".format(value | float)) }}{%- else -%}{{ fallback }}{%- endif -%}
+{%- endmacro %}
+
+{% macro flat_card(flat, dense=False, reveal=True, description=None, whatsapp_label='WhatsApp') %}
+{% set wa_base = 'https://wa.me/8801712458794' %}
+{% set card_image = flat.image_url or 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=80' %}
+{% set card_srcset = optimized_image_srcset(card_image, (420, 640, 900, 1200)) %}
+{% set blurb = description or (flat.description | truncate(110, True) if flat.description else 'Review the gallery, location, and visit options before you decide.') %}
+<article class="listing" {% if reveal %}data-reveal{% endif %}>
+  <div class="listing__media">
+    <img src="{{ optimized_image_url(card_image, 900) }}"
+         {% if card_srcset %}srcset="{{ card_srcset }}" sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 92vw"{% endif %}
+         alt="{{ flat.title }}" loading="lazy" decoding="async" width="900" height="675">
+    <div class="listing__badges">
+      <span class="badge badge--glass">
+        <svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg> Verified
+      </span>
+    </div>
+    <div class="listing__specs">
+      {% if flat.bhk %}<span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-bed"></use></svg>{{ flat.bhk }} BHK</span>{% endif %}
+      {% if flat.area_sqft %}<span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-ruler"></use></svg>{{ flat.area_sqft }} sqft</span>{% endif %}
+      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>{{ (flat.images | length) + 1 }} photos</span>
+    </div>
+  </div>
+
+  <div class="listing__body">
+    <p class="listing__meta">
+      <svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg>
+      {{ flat.location }}
+    </p>
+    <h3 class="listing__title">
+      <a href="{{ url_for('public.flat_detail', id=flat.id) }}">{{ flat.title }}</a>
+    </h3>
+    {% if not dense %}<p class="listing__desc">{{ blurb }}</p>{% endif %}
+
+    <div class="listing__foot">
+      <p class="listing__price">
+        {{ price_tag(flat.price) }}
+        {% if flat.area_sqft and flat.price %}<small>৳ {{ "{:,.0f}".format((flat.price | float) / (flat.area_sqft | float)) }} / sqft</small>{% endif %}
+      </p>
+      <div class="listing__actions">
+        <a class="btn btn--sm btn--ghost" href="{{ url_for('public.flat_detail', id=flat.id) }}">Details</a>
+        <a class="btn btn--sm btn--soft"
+           href="{{ wa_base }}?text={{ ('Hello FlatLand BD, I want to know more about ' ~ flat.title ~ ' in ' ~ flat.location) | urlencode }}"
+           target="_blank" rel="noopener" aria-label="Ask about {{ flat.title }} on WhatsApp">
+          <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
+          <span class="sr-only">{{ whatsapp_label }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</article>
+{% endmacro %}
+
+{% macro studio_card(service, reveal=True) %}
+{% set card_image = service.image_url or 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=80' %}
+{% set card_srcset = optimized_image_srcset(card_image, (420, 640, 900, 1200)) %}
+<article class="listing" {% if reveal %}data-reveal{% endif %}>
+  <div class="listing__media">
+    <img src="{{ optimized_image_url(card_image, 900) }}"
+         {% if card_srcset %}srcset="{{ card_srcset }}" sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 92vw"{% endif %}
+         alt="{{ service.provider_name }}" loading="lazy" decoding="async" width="900" height="675">
+    <div class="listing__badges">
+      <span class="badge badge--glass">
+        <svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> {{ service.service_type }}
+      </span>
+    </div>
+    <div class="listing__specs">
+      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg>{{ (service.images | length) + 1 }} portfolio shots</span>
+    </div>
+  </div>
+
+  <div class="listing__body">
+    <p class="listing__meta">
+      <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg>
+      Interior studio
+    </p>
+    <h3 class="listing__title">
+      <a href="{{ url_for('public.interior_detail', id=service.id) }}">{{ service.provider_name }}</a>
+    </h3>
+    <p class="listing__desc">{{ service.description | truncate(120, True) }}</p>
+
+    <div class="listing__foot">
+      <p class="listing__price">
+        {{ price_tag(service.starting_price) }}
+        {% if service.starting_price %}<small>Starting price</small>{% endif %}
+      </p>
+      <div class="listing__actions">
+        <a class="btn btn--sm btn--ghost" href="{{ url_for('public.interior_detail', id=service.id) }}">View studio</a>
+      </div>
+    </div>
+  </div>
+</article>
+{% endmacro %}
+
+{% macro empty_state(kicker, title, copy, primary_href, primary_label, secondary_href=None, secondary_label=None, icon='sparkles') %}
+<div class="empty" data-reveal>
+  <span class="empty__art">
+    <svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"></use></svg>
+  </span>
+  <p class="kicker">{{ kicker }}</p>
+  <h3 class="h3">{{ title }}</h3>
+  <p class="muted" style="max-width:52ch">{{ copy }}</p>
+  <div class="row" style="margin-top:var(--s2)">
+    <a class="btn btn--sm" href="{{ primary_href }}">{{ primary_label }}</a>
+    {% if secondary_href and secondary_label %}
+    <a class="btn btn--sm btn--ghost" href="{{ secondary_href }}"
+       {% if secondary_href.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ secondary_label }}</a>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro pager(page, has_prev, has_next, prev_url, next_url, label='page') %}
+{% if has_prev or has_next %}
+<nav class="pager" aria-label="Pagination">
+  {% if has_prev %}
+  <a class="btn btn--sm btn--ghost" href="{{ prev_url }}" rel="prev">
+    <svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg> Previous
+  </a>
+  {% endif %}
+  <span class="pager__status">{{ label | capitalize }} {{ page }}</span>
+  {% if has_next %}
+  <a class="btn btn--sm btn--ghost" href="{{ next_url }}" rel="next">
+    Next <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+  </a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

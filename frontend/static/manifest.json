@@ -1,0 +1,45 @@
+{
+  "name": "FlatLand BD — Homes & Interiors in Bangladesh",
+  "short_name": "FlatLand BD",
+  "description": "Browse verified flats and interior design studios across Bangladesh, and talk to the owner directly on WhatsApp.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf9f6",
+  "theme_color": "#fbf9f6",
+  "categories": ["business", "lifestyle", "shopping"],
+  "icons": [
+    {
+      "src": "/static/img/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse flats",
+      "short_name": "Flats",
+      "url": "/flats"
+    },
+    {
+      "name": "Interior studios",
+      "short_name": "Interiors",
+      "url": "/interior"
+    },
+    {
+      "name": "Post a listing",
+      "short_name": "Post",
+      "url": "/post-listing"
+    }
+  ]
+}

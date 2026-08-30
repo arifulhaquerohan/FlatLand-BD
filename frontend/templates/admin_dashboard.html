@@ -1,0 +1,575 @@
+{% extends "admin_base.html" %}
+{% set admin_nav = active_tab %}
+
+{% block admin_page_title %}
+{%- if active_tab == 'flats' -%}Flat listings
+{%- elif active_tab == 'services' -%}Interior studios
+{%- elif active_tab == 'leads' -%}Leads inbox
+{%- else -%}Overview
+{%- endif -%}
+{% endblock %}
+
+{% block admin_kicker %}
+{%- if active_tab == 'leads' -%}Moderate · Enquiries
+{%- elif active_tab in ['flats', 'services'] -%}Moderate · Queue
+{%- else -%}Console · Today
+{%- endif -%}
+{% endblock %}
+
+{% block admin_page_description %}
+{%- if active_tab == 'flats' -%}Approve, reject, edit or remove submitted apartments.
+{%- elif active_tab == 'services' -%}Approve, reject, edit or remove interior studio profiles.
+{%- elif active_tab == 'leads' -%}Every enquiry from the contact form, newest first.
+{%- else -%}A live snapshot of listings, review queue and customer enquiries.
+{%- endif -%}
+{% endblock %}
+
+{% block admin_header_actions %}
+<a class="btn btn--sm btn--ghost" href="{{ url_for('admin.preview') }}">
+  <svg class="i" aria-hidden="true"><use href="#i-monitor"></use></svg> Preview
+</a>
+<a class="btn btn--sm btn-arrow" href="{{ url_for('public.post_listing') }}">
+  <svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg> New listing
+</a>
+{% endblock %}
+
+{% macro listing_status(status) -%}
+<span class="pill-status pill-status--{{ 'live' if status == 'approved' else 'off' if status == 'rejected' else 'partial' }}">
+  <span class="pill-status__dot"></span>{{ status | capitalize }}
+</span>
+{%- endmacro %}
+
+{% macro lead_status(status) -%}
+<span class="pill-status pill-status--{{ 'partial' if status == 'new' else 'info' if status == 'contacted' else 'live' }}">
+  <span class="pill-status__dot"></span>{{ status | capitalize }}
+</span>
+{%- endmacro %}
+
+{% block content %}
+{% set wa_prefix = 'https://wa.me/' %}
+{% set total_assets = stats.total_flats + stats.total_services %}
+{% set approved_assets = stats.approved_flats + stats.approved_services %}
+{% set pending_assets = stats.pending_flats + stats.pending_services %}
+{% set rejected_assets = stats.rejected_flats + stats.rejected_services %}
+{% set worked_leads = stats.total_leads - stats.new_leads %}
+{% set approval_percent = ((approved_assets / total_assets) * 100) | round(0, 'floor') | int if total_assets else 0 %}
+{% set queue_pressure = ((pending_assets / total_assets) * 100) | round(0, 'floor') | int if total_assets else 0 %}
+{% set lead_progress = ((worked_leads / stats.total_leads) * 100) | round(0, 'floor') | int if stats.total_leads else 0 %}
+
+<nav class="tabs" aria-label="Console tabs">
+  <a class="tabs__link {{ 'is-on' if active_tab == 'dashboard' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='dashboard') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-activity"></use></svg> Overview
+  </a>
+  <a class="tabs__link {{ 'is-on' if active_tab == 'flats' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Flats
+    <span class="tabs__n">{{ stats.total_flats }}</span>
+  </a>
+  <a class="tabs__link {{ 'is-on' if active_tab == 'services' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='services') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Studios
+    <span class="tabs__n">{{ stats.total_services }}</span>
+  </a>
+  <a class="tabs__link {{ 'is-on' if active_tab == 'leads' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='leads') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> Leads
+    <span class="tabs__n {{ 'tabs__n--hot' if stats.new_leads else '' }}">{{ stats.total_leads }}</span>
+  </a>
+</nav>
+
+{% if active_tab == 'dashboard' %}
+<!-- ========================================================== OVERVIEW -->
+<div class="kpi-row">
+  <article class="kpi">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Listings</p>
+    <p class="kpi__value" data-count="{{ total_assets }}">{{ total_assets }}</p>
+    <p class="kpi__foot muted">{{ stats.total_flats }} flats · {{ stats.total_services }} studios</p>
+    {% if trend %}<svg class="spark" data-spark="{{ trend.listings | tojson }}" aria-hidden="true"></svg>{% endif %}
+  </article>
+
+  <article class="kpi kpi--sage">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Live on site</p>
+    <p class="kpi__value" data-count="{{ approved_assets }}">{{ approved_assets }}</p>
+    <div class="progress-rail"><span class="progress-rail__fill" data-bar="{{ approval_percent }}"></span></div>
+    <p class="kpi__foot muted">{{ approval_percent }}% approved</p>
+  </article>
+
+  <article class="kpi kpi--amber">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg> Awaiting review</p>
+    <p class="kpi__value" data-count="{{ pending_assets }}">{{ pending_assets }}</p>
+    <div class="progress-rail"><span class="progress-rail__fill progress-rail__fill--amber" data-bar="{{ queue_pressure }}"></span></div>
+    <p class="kpi__foot muted">
+      {% if pending_assets %}<a href="{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}">Open the queue</a>{% else %}Queue is clear{% endif %}
+    </p>
+  </article>
+
+  <article class="kpi {{ 'kpi--hot' if stats.new_leads else '' }}">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> New leads</p>
+    <p class="kpi__value" data-count="{{ stats.new_leads }}">{{ stats.new_leads }}</p>
+    <p class="kpi__foot muted">{{ stats.total_leads }} total · {{ lead_progress }}% worked</p>
+    {% if trend %}<svg class="spark" data-spark="{{ trend.leads | tojson }}" aria-hidden="true"></svg>{% endif %}
+  </article>
+</div>
+
+<div class="grid grid--split-wide">
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-chart"></use></svg> Last 14 days</h2>
+      <span class="body-sm muted">Submissions and enquiries per day</span>
+    </header>
+
+    {% if trend %}
+    <div class="barchart" role="img" aria-label="Daily submissions and enquiries for the last 14 days">
+      {% for day in trend.days %}
+      <div class="barchart__col">
+        <div class="barchart__stack">
+          <span class="barchart__seg barchart__seg--clay" data-seg-height="{{ day.listings_pct }}" style="height:{{ day.listings_pct }}%"
+                title="{{ day.label }}: {{ day.listings }} listings"></span>
+          <span class="barchart__seg barchart__seg--sage" data-seg-height="{{ day.leads_pct }}" style="height:{{ day.leads_pct }}%"
+                title="{{ day.label }}: {{ day.leads }} leads"></span>
+        </div>
+        <span class="barchart__x">{{ day.short }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="legend">
+      <span><i class="legend__sw legend__sw--clay"></i> Listings ({{ trend.total_listings }})</span>
+      <span><i class="legend__sw legend__sw--sage"></i> Leads ({{ trend.total_leads }})</span>
+    </div>
+    {% else %}
+    <p class="muted">No activity recorded yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-target"></use></svg> Moderation mix</h2>
+    </header>
+    <div class="rings">
+      <div class="ring-item">
+        <div class="ring" data-ring="{{ approval_percent }}" role="img" aria-label="{{ approval_percent }} percent approved">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
+          <span class="ring__label"><strong>{{ approval_percent }}</strong><small>percent</small></span>
+        </div>
+        <p>Approved</p>
+      </div>
+      <div class="ring-item">
+        <div class="ring ring--amber" data-ring="{{ queue_pressure }}" role="img" aria-label="{{ queue_pressure }} percent pending">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
+          <span class="ring__label"><strong>{{ queue_pressure }}</strong><small>percent</small></span>
+        </div>
+        <p>Pending</p>
+      </div>
+      <div class="ring-item">
+        <div class="ring ring--sage" data-ring="{{ lead_progress }}" role="img" aria-label="{{ lead_progress }} percent of leads worked">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
+          <span class="ring__label"><strong>{{ lead_progress }}</strong><small>percent</small></span>
+        </div>
+        <p>Leads worked</p>
+      </div>
+    </div>
+    <dl class="kv kv--tight">
+      <div><dt>Rejected</dt><dd>{{ rejected_assets }}</dd></div>
+      <div><dt>Flats pending</dt><dd>{{ stats.pending_flats }}</dd></div>
+      <div><dt>Studios pending</dt><dd>{{ stats.pending_services }}</dd></div>
+      <div><dt>Leads closed</dt><dd>{{ worked_leads }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<div class="grid grid--split-wide">
+  <section class="panel panel--flush">
+    <header class="panel__head panel__head--pad">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Latest flats</h2>
+      <a class="link-arrow link-arrow--sm" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">All flats
+        <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+    </header>
+
+    {% if flats %}
+    <ul class="feed">
+      {% for flat in flats %}
+      <li class="feed__row">
+        <img class="feed__thumb" src="{{ optimized_image_url(flat.image_url or 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=200&q=70', 160) }}"
+             alt="" width="56" height="44" loading="lazy" decoding="async">
+        <div class="feed__body">
+          <a class="feed__title" href="{{ url_for('admin.edit_listing', item_type='flat', id=flat.id) }}">{{ flat.title }}</a>
+          <span class="feed__meta">{{ flat.location }} · {{ flat.created_at.strftime('%d %b') if flat.created_at else '—' }}</span>
+        </div>
+        {{ listing_status(flat.status) }}
+        {% if flat.status != 'approved' %}
+        <form method="POST" action="{{ url_for('admin.approve_listing', item_type='flat', id=flat.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="icon-btn icon-btn--sm icon-btn--ok" type="submit" aria-label="Approve" title="Approve">
+            <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+          </button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty empty--inline">
+      <span class="empty__art"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg></span>
+      <p class="muted">No flats submitted yet.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="panel panel--flush">
+    <header class="panel__head panel__head--pad">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Latest studios</h2>
+      <a class="link-arrow link-arrow--sm" href="{{ url_for('admin.admin_dashboard', tab='services') }}">All studios
+        <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+    </header>
+
+    {% if services %}
+    <ul class="feed">
+      {% for service in services %}
+      <li class="feed__row">
+        <img class="feed__thumb" src="{{ optimized_image_url(service.image_url or 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=200&q=70', 160) }}"
+             alt="" width="56" height="44" loading="lazy" decoding="async">
+        <div class="feed__body">
+          <a class="feed__title" href="{{ url_for('admin.edit_listing', item_type='interior', id=service.id) }}">{{ service.provider_name }}</a>
+          <span class="feed__meta">{{ service.service_type }} · {{ service.created_at.strftime('%d %b') if service.created_at else '—' }}</span>
+        </div>
+        {{ listing_status(service.status) }}
+        {% if service.status != 'approved' %}
+        <form method="POST" action="{{ url_for('admin.approve_listing', item_type='interior', id=service.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="icon-btn icon-btn--sm icon-btn--ok" type="submit" aria-label="Approve" title="Approve">
+            <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+          </button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty empty--inline">
+      <span class="empty__art"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg></span>
+      <p class="muted">No studio profiles yet.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="panel panel--flush">
+  <header class="panel__head panel__head--pad">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> Newest enquiries</h2>
+    <a class="link-arrow link-arrow--sm" href="{{ url_for('admin.admin_dashboard', tab='leads') }}">Open inbox
+      <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+  </header>
+
+  {% if leads %}
+  <ul class="feed">
+    {% for lead in leads %}
+    <li class="feed__row">
+      <span class="avatar avatar--sm">{{ (lead.name or '?')[0] | upper }}</span>
+      <div class="feed__body">
+        <span class="feed__title">{{ lead.name }}</span>
+        <span class="feed__meta">
+          {{ lead.interest or 'General enquiry' }} ·
+          {{ lead.created_at.strftime('%d %b, %H:%M') if lead.created_at else '—' }}
+        </span>
+      </div>
+      <div class="feed__contact">
+        {% if lead.phone %}<a class="icon-btn icon-btn--sm" href="tel:{{ lead.phone }}" aria-label="Call {{ lead.name }}" title="{{ lead.phone }}">
+          <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg></a>{% endif %}
+        {% if lead.email %}<a class="icon-btn icon-btn--sm" href="mailto:{{ lead.email }}" aria-label="Email {{ lead.name }}" title="{{ lead.email }}">
+          <svg class="i" aria-hidden="true"><use href="#i-mail"></use></svg></a>{% endif %}
+      </div>
+      {{ lead_status(lead.status) }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty empty--inline">
+    <span class="empty__art"><svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg></span>
+    <p class="muted">No enquiries yet. The contact form on the public site feeds this inbox.</p>
+  </div>
+  {% endif %}
+</section>
+
+<div class="quick-row">
+  <a class="quick" href="{{ url_for('admin.media_library') }}">
+    <span class="quick__ic"><svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg></span>
+    <strong>Media &amp; CDN</strong><small>Check Cloudinary delivery</small>
+  </a>
+  <a class="quick" href="{{ url_for('admin.system_health') }}">
+    <span class="quick__ic"><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg></span>
+    <strong>Health checks</strong><small>Security &amp; config</small>
+  </a>
+  <a class="quick" href="{{ url_for('admin.export_data', item_type='leads') }}">
+    <span class="quick__ic"><svg class="i" aria-hidden="true"><use href="#i-download"></use></svg></span>
+    <strong>Export leads</strong><small>CSV download</small>
+  </a>
+  <a class="quick" href="{{ url_for('admin.preview') }}">
+    <span class="quick__ic"><svg class="i" aria-hidden="true"><use href="#i-monitor"></use></svg></span>
+    <strong>Live preview</strong><small>Desktop &amp; mobile</small>
+  </a>
+</div>
+
+{% else %}
+<!-- ============================================================ TABLES -->
+{% set is_leads = active_tab == 'leads' %}
+{% set item_type = 'flat' if active_tab == 'flats' else 'interior' %}
+
+<section class="panel panel--flush" data-select-scope>
+  <form class="table-filters" method="get" action="{{ url_for('admin.admin_dashboard') }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
+
+    <label class="input-wrap input-wrap--sm">
+      <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input class="input input--sm input--with-ic" type="search" name="q"
+             value="{{ admin_filters.q }}"
+             placeholder="{{ 'Search name, phone, email, message…' if is_leads else 'Search title or location…' }}"
+             aria-label="Search">
+    </label>
+
+    <label class="field field--inline">
+      <span class="sr-only">Status</span>
+      <select class="select select--sm" name="status" data-autosubmit>
+        {% for value, label in status_options %}
+        <option value="{{ value }}" {{ 'selected' if admin_filters.status == value else '' }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button class="btn btn--sm" type="submit">
+      <svg class="i" aria-hidden="true"><use href="#i-filter"></use></svg> Filter
+    </button>
+
+    {% if filters_applied %}
+    <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.admin_dashboard', tab=active_tab) }}">
+      <svg class="i" aria-hidden="true"><use href="#i-x"></use></svg> Clear
+    </a>
+    {% endif %}
+
+    <label class="input-wrap input-wrap--sm table-filters__live">
+      <svg class="i input-wrap__ic" aria-hidden="true"><use href="#i-zap"></use></svg>
+      <input class="input input--sm input--with-ic" type="search" placeholder="Filter this page instantly…"
+             data-table-filter=".dtable tbody tr" aria-label="Filter rows on this page">
+    </label>
+    <span class="body-sm muted" data-filter-note></span>
+  </form>
+
+  {% set rows = leads if is_leads else (flats if active_tab == 'flats' else services) %}
+
+  {% if rows %}
+  <div class="table-wrap">
+    <p class="dtable-hint muted">Swipe the table sideways to see status and actions.</p>
+<div class="dtable-scroll">
+<table class="dtable">
+      <thead>
+        <tr>
+          <th class="cell-check">
+            <input type="checkbox" data-check-all aria-label="Select all rows on this page">
+          </th>
+          {% if is_leads %}
+          <th>Person</th><th>Interest</th><th class="desk-only">Message</th><th>Received</th><th>Status</th><th class="cell-actions">Actions</th>
+          {% else %}
+          <th>{{ 'Listing' if active_tab == 'flats' else 'Studio' }}</th>
+          <th class="desk-only">Submitted by</th>
+          <th>Added</th><th>Status</th><th class="cell-actions">Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+
+      {% if is_leads %}
+        {% for lead in leads %}
+        <tr data-row>
+          <td class="cell-check">
+            <input type="checkbox" data-row-check value="{{ lead.id }}" aria-label="Select lead {{ lead.id }}">
+          </td>
+          <td>
+            <div class="cell-item">
+              <span class="avatar avatar--sm">{{ (lead.name or '?')[0] | upper }}</span>
+              <div>
+                <span class="cell-title">{{ lead.name }}</span>
+                <span class="cell-sub">
+                  {% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% endif %}
+                  {% if lead.phone and lead.email %} · {% endif %}
+                  {% if lead.email %}<a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% endif %}
+                </span>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge--glass">{{ lead.interest or 'General' }}</span></td>
+          <td class="desk-only cell-msg">{{ (lead.message or '') | truncate(90) }}</td>
+          <td class="cell-nowrap">{{ lead.created_at.strftime('%d %b, %H:%M') if lead.created_at else '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_lead_status', id=lead.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select class="select select--sm select--status" name="status" data-autosubmit aria-label="Lead status">
+                <option value="new" {{ 'selected' if lead.status == 'new' else '' }}>New</option>
+                <option value="contacted" {{ 'selected' if lead.status == 'contacted' else '' }}>Contacted</option>
+                <option value="closed" {{ 'selected' if lead.status == 'closed' else '' }}>Closed</option>
+              </select>
+            </form>
+          </td>
+          <td class="cell-actions">
+            {% if lead.phone %}
+            <a class="icon-btn icon-btn--sm" href="{{ wa_prefix }}{{ lead.phone | replace('+', '') | replace(' ', '') }}"
+               target="_blank" rel="noopener" aria-label="WhatsApp {{ lead.name }}" title="WhatsApp">
+              <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
+            </a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('admin.delete_lead', id=lead.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="icon-btn icon-btn--sm icon-btn--danger" type="submit"
+                      data-confirm="The enquiry from {{ lead.name }} will be permanently deleted."
+                      data-confirm-title="Delete this lead?"
+                      data-confirm-ok-label="Delete lead"
+                      aria-label="Delete lead" title="Delete">
+                <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+
+      {% else %}
+        {% for row in rows %}
+        {% set is_flat = active_tab == 'flats' %}
+        <tr data-row>
+          <td class="cell-check">
+            <input type="checkbox" data-row-check value="{{ row.id }}" aria-label="Select item {{ row.id }}">
+          </td>
+          <td>
+            <div class="cell-item">
+              <img class="cell-thumb"
+                   src="{{ optimized_image_url(row.image_url or ('https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=200&q=70' if is_flat else 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=200&q=70'), 160) }}"
+                   alt="" width="52" height="40" loading="lazy" decoding="async">
+              <div>
+                <a class="cell-title" href="{{ url_for('admin.edit_listing', item_type=item_type, id=row.id) }}">
+                  {{ row.title if is_flat else row.provider_name }}
+                </a>
+                <span class="cell-sub">{{ row.location if is_flat else row.service_type }}</span>
+              </div>
+            </div>
+          </td>
+          <td class="desk-only">
+            {% if is_flat %}{{ row.owner.full_name if row.owner else 'Admin' }}
+            {% else %}{{ row.provider.full_name if row.provider else 'Admin' }}{% endif %}
+          </td>
+          <td class="cell-nowrap">{{ row.created_at.strftime('%d %b %Y') if row.created_at else '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_listing_status', item_type=item_type, id=row.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select class="select select--sm select--status" name="status" data-autosubmit aria-label="Listing status">
+                <option value="pending" {{ 'selected' if row.status == 'pending' else '' }}>Pending</option>
+                <option value="approved" {{ 'selected' if row.status == 'approved' else '' }}>Approved</option>
+                <option value="rejected" {{ 'selected' if row.status == 'rejected' else '' }}>Rejected</option>
+              </select>
+            </form>
+          </td>
+          <td class="cell-actions">
+            {% if row.status == 'approved' %}
+            <a class="icon-btn icon-btn--sm"
+               href="{{ url_for('public.flat_detail', id=row.id) if is_flat else url_for('public.interior_detail', id=row.id) }}"
+               target="_blank" rel="noopener" aria-label="View live" title="View live">
+              <svg class="i" aria-hidden="true"><use href="#i-eye"></use></svg>
+            </a>
+            {% else %}
+            <form method="POST" action="{{ url_for('admin.approve_listing', item_type=item_type, id=row.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="icon-btn icon-btn--sm icon-btn--ok" type="submit" aria-label="Approve" title="Approve">
+                <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+              </button>
+            </form>
+            {% endif %}
+            <a class="icon-btn icon-btn--sm" href="{{ url_for('admin.edit_listing', item_type=item_type, id=row.id) }}"
+               aria-label="Edit" title="Edit">
+              <svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>
+            </a>
+            <form method="POST" action="{{ url_for('admin.delete_listing', item_type=item_type, id=row.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="icon-btn icon-btn--sm icon-btn--danger" type="submit"
+                      data-confirm="{{ (row.title if is_flat else row.provider_name) }} and its photos will be permanently deleted."
+                      data-confirm-title="Delete this {{ 'flat' if is_flat else 'studio' }}?"
+                      data-confirm-ok-label="Delete permanently"
+                      aria-label="Delete" title="Delete">
+                <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      {% endif %}
+
+      </tbody>
+    </table>
+</div>
+  </div>
+
+  {% if has_prev or has_next %}
+  <nav class="pager pager--pad" aria-label="Pages">
+    {% if has_prev %}<a class="btn btn--sm btn--ghost" href="{{ prev_url }}">
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-left"></use></svg> Previous</a>{% endif %}
+    <span class="pager__status">Page {{ page }} · {{ rows | length }} shown</span>
+    {% if has_next %}<a class="btn btn--sm btn--ghost" href="{{ next_url }}">Next
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg></a>{% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty empty--inline">
+    <span class="empty__art">
+      <svg class="i" aria-hidden="true"><use href="{{ '#i-inbox' if is_leads else '#i-building' if active_tab == 'flats' else '#i-couch' }}"></use></svg>
+    </span>
+    <h3 class="h4">{% if filters_applied %}Nothing matches those filters{% else %}Nothing here yet{% endif %}</h3>
+    <p class="muted">
+      {% if filters_applied %}Try a different status or clear the search.
+      {% elif is_leads %}Enquiries from the public contact form will appear here.
+      {% else %}Submissions will appear here as soon as someone posts one.{% endif %}
+    </p>
+    {% if filters_applied %}
+    <a class="btn btn--sm" href="{{ url_for('admin.admin_dashboard', tab=active_tab) }}">Clear filters</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- bulk action bar -->
+  <form class="bulkbar" method="POST" data-bulkbar
+        action="{{ url_for('admin.bulk_update_leads') if is_leads else url_for('admin.bulk_update_listings', item_type=item_type) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <span data-bulk-ids="ids" hidden></span>
+
+    <span class="bulkbar__count"><strong data-bulk-count>0</strong> selected</span>
+
+    <div class="bulkbar__actions">
+      {% if is_leads %}
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="contacted">
+        <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg> Mark contacted
+      </button>
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="closed">
+        <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Close
+      </button>
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="new">
+        <svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg> Reopen
+      </button>
+      {% else %}
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="approved">
+        <svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Approve
+      </button>
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="pending">
+        <svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg> Send to review
+      </button>
+      <button class="btn btn--sm btn--soft" type="submit" name="action" value="rejected">
+        <svg class="i" aria-hidden="true"><use href="#i-x"></use></svg> Reject
+      </button>
+      {% endif %}
+
+      <button class="btn btn--sm btn--danger" type="submit" name="action" value="delete"
+              data-confirm="Every selected row will be permanently deleted. This cannot be undone."
+              data-confirm-title="Delete selected rows?"
+              data-confirm-ok-label="Delete permanently">
+        <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg> Delete
+      </button>
+
+      <button class="icon-btn icon-btn--sm" type="button" data-bulk-clear aria-label="Clear selection" title="Clear selection">
+        <svg class="i" aria-hidden="true"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

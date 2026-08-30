@@ -1,0 +1,112 @@
+{% extends "admin_base.html" %}
+{% set admin_nav = 'system_health' %}
+
+{% block admin_page_title %}Health &amp; config{% endblock %}
+{% block admin_kicker %}System · Diagnostics{% endblock %}
+{% block admin_page_description %}Every setting this site depends on, checked live on the server.{% endblock %}
+
+{% block admin_header_actions %}
+<button class="btn btn--sm btn--soft" type="button"
+        data-test-endpoint="{{ url_for('admin.media_test') }}"
+        data-test-output="#sys-test-out">
+  <svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg>
+  <span data-test-label>Ping Cloudinary</span>
+</button>
+<a class="btn btn--sm btn--ghost" href="{{ url_for('admin.system_health') }}">
+  <svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg> Re-run checks
+</a>
+{% endblock %}
+
+{% block content %}
+
+<section class="health-hero health-hero--{{ 'fail' if summary.fail else 'warn' if summary.warn else 'ok' }}">
+  <div class="health-hero__score">
+    <div class="ring" data-ring="{{ summary.percent }}" role="img"
+         aria-label="{{ summary.percent }}% of checks passing">
+      <span class="ring__value">{{ summary.percent }}<small>%</small></span>
+    </div>
+  </div>
+  <div class="health-hero__text">
+    <p class="kicker">
+      <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg>
+      {{ 'Action needed' if summary.fail else 'Almost perfect' if summary.warn else 'All clear' }}
+    </p>
+    <h2 class="h2">
+      {{ summary.ok }} passing · {{ summary.warn }} warning{{ '' if summary.warn == 1 else 's' }} · {{ summary.fail }} failing
+    </h2>
+    <p class="muted">
+      {% if summary.fail %}
+        Fix the red items first — they affect security or data safety.
+      {% elif summary.warn %}
+        Nothing is broken. The amber items are optional upgrades for speed and reliability.
+      {% else %}
+        Configuration is complete: security headers, encryption, storage and mail are all set.
+      {% endif %}
+    </p>
+    <pre class="test-out" id="sys-test-out" aria-live="polite">Cloudinary ping result appears here.</pre>
+  </div>
+</section>
+
+{% for group in check_groups %}
+<section class="panel">
+  <header class="panel__head">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-{{ group.icon }}"></use></svg> {{ group.name }}</h2>
+    <span class="body-sm muted">{{ group.checks | selectattr('status', 'equalto', 'ok') | list | length }}/{{ group.checks | length }} passing</span>
+  </header>
+
+  <ul class="checklist">
+    {% for check in group.checks %}
+    <li class="checklist__row checklist__row--{{ check.status }}">
+      <span class="checklist__ic">
+        <svg class="i" aria-hidden="true">
+          <use href="{{ '#i-check-circle' if check.status == 'ok' else '#i-alert-triangle' if check.status == 'warn' else '#i-alert-circle' }}"></use>
+        </svg>
+      </span>
+      <div class="checklist__body">
+        <p class="checklist__label">{{ check.label }}</p>
+        <p class="checklist__detail">{{ check.detail }}</p>
+        {% if check.hint and check.status != 'ok' %}
+        <p class="checklist__hint"><svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg> {{ check.hint }}</p>
+        {% endif %}
+      </div>
+      <span class="pill-status pill-status--{{ 'live' if check.status == 'ok' else 'partial' if check.status == 'warn' else 'off' }}">
+        {{ 'OK' if check.status == 'ok' else 'Check' if check.status == 'warn' else 'Fix' }}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+
+<div class="grid grid--2">
+  <section class="panel">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-database"></use></svg> Runtime</h2>
+    <dl class="kv">
+      {% for row in runtime %}
+      <div><dt>{{ row.label }}</dt><dd>{{ row.value }}</dd></div>
+      {% endfor %}
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Content totals</h2>
+    <dl class="kv">
+      <div><dt>Flats</dt><dd>{{ stats.total_flats }} total · {{ stats.approved_flats }} live · {{ stats.pending_flats }} pending</dd></div>
+      <div><dt>Interior studios</dt><dd>{{ stats.total_services }} total · {{ stats.approved_services }} live · {{ stats.pending_services }} pending</dd></div>
+      <div><dt>Leads</dt><dd>{{ stats.total_leads }} total · {{ stats.new_leads }} new</dd></div>
+      <div><dt>Images tracked</dt><dd>{{ media_stats.total }} ({{ media_stats.cloudinary }} on CDN)</dd></div>
+    </dl>
+    <div class="row row--tight">
+      <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.export_data', item_type='flats') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-download"></use></svg> Flats CSV
+      </a>
+      <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.export_data', item_type='services') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-download"></use></svg> Studios CSV
+      </a>
+      <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.export_data', item_type='leads') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-download"></use></svg> Leads CSV
+      </a>
+    </div>
+  </section>
+</div>
+{% endblock %}

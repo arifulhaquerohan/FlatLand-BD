@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Something broke | FlatLand BD{% endblock %}
+
+{% block content %}
+<section class="oops">
+  <div class="hero__orb hero__orb--b" aria-hidden="true"></div>
+  <div class="shell oops__inner">
+    <p class="oops__code" aria-hidden="true">500</p>
+    <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-alert-triangle"></use></svg> Server error</p>
+    <h1 class="display display--sm">That one is on us</h1>
+    <p class="lead">
+      Something failed while loading this page. The team has been notified — please try again in a moment,
+      or reach us directly and we will sort it out.
+    </p>
+
+    <div class="row" style="justify-content:center">
+      <a class="btn btn--lg btn-arrow" href="{{ url_for('public.index') }}">
+        Back to home <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+      <a class="btn btn--lg btn--ghost" href="https://wa.me/8801712458794" target="_blank" rel="noopener">
+        <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Report it
+      </a>
+    </div>
+
+    <div class="oops__links">
+      <a href="{{ url_for('public.flats') }}"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Flats</a>
+      <a href="{{ url_for('public.interior') }}"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Interior studios</a>
+      <a href="tel:+8801712458794"><svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg> Call us</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

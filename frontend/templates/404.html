@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found | FlatLand BD{% endblock %}
+
+{% block content %}
+<section class="oops">
+  <div class="hero__orb hero__orb--a" aria-hidden="true"></div>
+  <div class="shell oops__inner">
+    <p class="oops__code" aria-hidden="true">404</p>
+    <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-compass"></use></svg> Wrong turn</p>
+    <h1 class="display display--sm">This page has moved out</h1>
+    <p class="lead">The link may be old, or the listing was taken down after it sold. Let us point you somewhere useful.</p>
+
+    <div class="row" style="justify-content:center">
+      <a class="btn btn--lg btn-arrow" href="{{ url_for('public.flats') }}">
+        Browse flats <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+      <a class="btn btn--lg btn--ghost" href="{{ url_for('public.index') }}">Back to home</a>
+    </div>
+
+    <div class="oops__links">
+      <a href="{{ url_for('public.interior') }}"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Interior studios</a>
+      <a href="{{ url_for('public.post_listing') }}"><svg class="i" aria-hidden="true"><use href="#i-plus-circle"></use></svg> Post a listing</a>
+      <a href="{{ url_for('public.index') }}#contact"><svg class="i" aria-hidden="true"><use href="#i-message"></use></svg> Talk to us</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

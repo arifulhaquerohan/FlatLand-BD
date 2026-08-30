@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf9f6">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}{% block admin_page_title %}Console{% endblock %} · FlatLand BD{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600&family=Sora:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600&display=swap&text=%E0%A7%B3">
+<link rel="stylesheet" href="{{ static_url('css/core.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/console.css') }}">
+<link rel="icon" type="image/svg+xml" href="{{ static_url('img/logo-icon.svg') }}">
+{% block extra_css %}{% endblock %}
+</head>
+
+<body class="console">
+{% include "components/sprite.html" %}
+
+{% set active_endpoint = (request.endpoint or '').split('.')[-1] %}
+{% set nav_key = admin_nav if admin_nav is defined else (admin_nav_key if admin_nav_key is defined else (active_tab if active_tab is defined else active_endpoint)) %}
+{% set admin_root = url_for('admin.admin_dashboard') %}
+
+{% set flashes = [] %}
+{% for category, message in get_flashed_messages(with_categories=true) %}
+  {% set _ = flashes.append({'category': category, 'message': message}) %}
+{% endfor %}
+{% if flashes %}<script type="application/json" data-flashes>{{ flashes | tojson }}</script>{% endif %}
+
+<script type="application/json" data-palette-data>
+[
+  {"label": "Overview", "url": "{{ url_for('admin.admin_dashboard', tab='dashboard') }}", "icon": "activity", "hint": "Dashboard", "keywords": "home stats kpi"},
+  {"label": "Flat listings", "url": "{{ url_for('admin.admin_dashboard', tab='flats') }}", "icon": "building", "hint": "Moderate", "keywords": "apartments approve reject"},
+  {"label": "Interior studios", "url": "{{ url_for('admin.admin_dashboard', tab='services') }}", "icon": "couch", "hint": "Moderate", "keywords": "services designers"},
+  {"label": "Leads inbox", "url": "{{ url_for('admin.admin_dashboard', tab='leads') }}", "icon": "inbox", "hint": "Enquiries", "keywords": "contacts pipeline customers"},
+  {"label": "Pending review queue", "url": "{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}", "icon": "clock", "hint": "Filtered", "keywords": "queue waiting approve"},
+  {"label": "Media &amp; Cloudinary", "url": "{{ url_for('admin.media_library') }}", "icon": "cloud", "hint": "Storage", "keywords": "images cdn upload cloudinary"},
+  {"label": "System health", "url": "{{ url_for('admin.system_health') }}", "icon": "shield", "hint": "Diagnostics", "keywords": "checks env config security"},
+  {"label": "Live preview", "url": "{{ url_for('admin.preview') }}", "icon": "monitor", "hint": "Site", "keywords": "device mobile responsive"},
+  {"label": "New listing", "url": "{{ url_for('public.post_listing') }}", "icon": "plus-circle", "hint": "Create", "keywords": "add flat studio post"},
+  {"label": "Export flats (CSV)", "url": "{{ url_for('admin.export_data', item_type='flats') }}", "icon": "download", "hint": "Export", "keywords": "csv download backup"},
+  {"label": "Export leads (CSV)", "url": "{{ url_for('admin.export_data', item_type='leads') }}", "icon": "download", "hint": "Export", "keywords": "csv download contacts"},
+  {"label": "Open public site", "url": "{{ url_for('public.index') }}", "icon": "external", "hint": "Website", "keywords": "front end home visit"},
+  {"label": "Sign out", "url": "{{ url_for('public.logout') }}", "icon": "log-out", "hint": "Session", "keywords": "logout exit"}
+]
+</script>
+
+<div class="console__shell">
+
+  <!-- ============================================================ RAIL -->
+  <aside class="rail" data-rail>
+    <a class="rail__brand" href="{{ url_for('public.index') }}">
+      <img class="rail__mark" src="{{ static_url('img/logo-icon.svg') }}" alt="FlatLand BD" width="36" height="36">
+      <span class="rail__names">
+        <strong>FlatLand BD</strong>
+        <small>Operations console</small>
+      </span>
+    </a>
+
+    <nav class="rail__group" aria-label="Console sections">
+      <p class="rail__label">Moderate</p>
+      <a class="rail__link {{ 'is-active' if nav_key == 'dashboard' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='dashboard') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-activity"></use></svg> Overview
+      </a>
+      <a class="rail__link {{ 'is-active' if nav_key == 'flats' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Flats
+        {% if stats and stats.pending_flats %}<span class="rail__count">{{ stats.pending_flats }}</span>{% endif %}
+      </a>
+      <a class="rail__link {{ 'is-active' if nav_key == 'services' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='services') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Interior studios
+        {% if stats and stats.pending_services %}<span class="rail__count">{{ stats.pending_services }}</span>{% endif %}
+      </a>
+      <a class="rail__link {{ 'is-active' if nav_key == 'leads' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='leads') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> Leads
+        {% if stats and stats.new_leads %}<span class="rail__count rail__count--pulse">{{ stats.new_leads }}</span>{% endif %}
+      </a>
+    </nav>
+
+    <nav class="rail__group" aria-label="Content">
+      <p class="rail__label">Content</p>
+      <a class="rail__link {{ 'is-active' if nav_key in ['media_library', 'media'] else '' }}" href="{{ url_for('admin.media_library') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg> Media &amp; CDN
+      </a>
+      <a class="rail__link {{ 'is-active' if nav_key in ['post_listing', 'new_listing'] else '' }}" href="{{ url_for('public.post_listing') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-plus-circle"></use></svg> New listing
+      </a>
+      <a class="rail__link {{ 'is-active' if nav_key == 'preview' else '' }}" href="{{ url_for('admin.preview') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-monitor"></use></svg> Live preview
+      </a>
+    </nav>
+
+    <nav class="rail__group" aria-label="System">
+      <p class="rail__label">System</p>
+      <a class="rail__link {{ 'is-active' if nav_key in ['system_health', 'system'] else '' }}" href="{{ url_for('admin.system_health') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg> Health &amp; config
+      </a>
+      <a class="rail__link" href="{{ url_for('admin.export_data', item_type='leads') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-download"></use></svg> Export data
+      </a>
+      <a class="rail__link" href="{{ url_for('public.index') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg> View public site
+      </a>
+    </nav>
+
+    <div class="rail__me">
+      <span class="avatar avatar--sm">{{ (current_user.full_name or current_user.username or 'A')[0] | upper }}</span>
+      <div class="rail__me-text">
+        <strong>{{ current_user.full_name or current_user.username }}</strong>
+        <small>{{ current_user.email or 'Administrator' }}</small>
+      </div>
+      <a class="icon-btn icon-btn--sm" href="{{ url_for('public.logout') }}" aria-label="Sign out" title="Sign out">
+        <svg class="i" aria-hidden="true"><use href="#i-log-out"></use></svg>
+      </a>
+    </div>
+  </aside>
+
+  <div class="rail__scrim" data-rail-scrim aria-hidden="true"></div>
+
+  <!-- ========================================================== MAIN -->
+  <div class="console__main">
+    <header class="topbar">
+      <button class="icon-btn rail-toggle" type="button" data-rail-toggle aria-expanded="false" aria-label="Toggle navigation">
+        <svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg>
+      </button>
+
+      <div class="topbar__heads">
+        <p class="topbar__kicker">{% block admin_kicker %}Console{% endblock %}</p>
+        <h1 class="topbar__title">{{ self.admin_page_title() }}</h1>
+        <p class="topbar__sub">{% block admin_page_description %}{% endblock %}</p>
+      </div>
+
+      <div class="topbar__actions">
+        <button class="palette-trigger" type="button" data-palette-open>
+          <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+          <span>Jump to…</span>
+          <kbd class="kbd">⌘K</kbd>
+        </button>
+        {% block admin_header_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <main class="console__body">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<!-- ================================================= COMMAND PALETTE -->
+<div class="palette" data-palette role="dialog" aria-modal="true" aria-label="Command palette">
+  <div class="palette__box">
+    <label class="palette__input">
+      <svg class="i" aria-hidden="true"><use href="#i-command"></use></svg>
+      <input type="text" data-palette-input placeholder="Search sections, exports, tools…" aria-label="Search commands">
+      <kbd class="kbd">Esc</kbd>
+    </label>
+    <div class="palette__list" data-palette-list></div>
+  </div>
+</div>
+
+<!-- =================================================== CONFIRM DIALOG -->
+<div class="confirm" data-confirm-dialog role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="confirm__box">
+    <span class="confirm__ic"><svg class="i" aria-hidden="true"><use href="#i-alert-triangle"></use></svg></span>
+    <h2 class="h3" id="confirm-title" data-confirm-title>Please confirm</h2>
+    <p class="muted" data-confirm-body>This action cannot be undone.</p>
+    <div class="row row--end">
+      <button class="btn btn--ghost btn--sm" type="button" data-confirm-cancel>Cancel</button>
+      <button class="btn btn--danger btn--sm" type="button" data-confirm-ok>Yes, continue</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" data-toasts role="status" aria-live="polite"></div>
+<div class="route-veil" data-veil aria-hidden="true"><div class="spinner"></div></div>
+
+<script src="{{ static_url('js/app.js') }}" defer></script>
+<script src="{{ static_url('js/console.js') }}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

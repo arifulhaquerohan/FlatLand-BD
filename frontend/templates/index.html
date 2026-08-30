@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% import "components/cards.html" as ui %}
+
+{% block title %}FlatLand BD — Verified flats &amp; interior studios in Bangladesh{% endblock %}
+
+{% block preload %}
+<link rel="preload" as="image" href="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80" fetchpriority="high">
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================ HERO -->
+<section class="hero">
+  <div class="hero__mesh" aria-hidden="true"></div>
+  <div class="hero__orb hero__orb--a" aria-hidden="true"></div>
+  <div class="hero__orb hero__orb--b" aria-hidden="true"></div>
+  <div class="hero__rules" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <div class="shell hero__inner">
+    <div class="hero__copy">
+      <p class="kicker" data-reveal>
+        <svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg>
+        Dhaka · Chattogram · Sylhet
+      </p>
+
+      <h1 class="display hero__title">
+        <span class="reveal-words" data-words>Find the flat.</span>
+        <span class="reveal-words accent" data-words>Design the home.</span>
+      </h1>
+
+      <p class="lead" data-reveal>
+        Every listing on FlatLand BD is checked by a human before it goes live — real photos,
+        honest square footage, and interior studios that actually pick up the phone.
+      </p>
+
+      <div class="hero__actions" data-reveal>
+        <a class="btn btn--lg btn-arrow" href="{{ url_for('public.flats') }}">
+          Browse verified flats
+          <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+        </a>
+        <a class="btn btn--lg btn--ghost" href="{{ url_for('public.interior') }}">
+          <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg>
+          Meet interior studios
+        </a>
+      </div>
+
+      <dl class="hero__proof" data-reveal-group>
+        <div>
+          <dt>Live flats</dt>
+          <dd><span data-count="{{ stats.flats or 0 }}" data-count-suffix="+">{{ stats.flats or 0 }}</span></dd>
+        </div>
+        <div>
+          <dt>Interior studios</dt>
+          <dd><span data-count="{{ stats.studios or 0 }}" data-count-suffix="+">{{ stats.studios or 0 }}</span></dd>
+        </div>
+        <div>
+          <dt>Reply time</dt>
+          <dd><span data-count="15" data-count-suffix=" min">15 min</span></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="hero__visual" data-reveal="left">
+      <figure class="frame frame--main" data-tilt>
+        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"
+             alt="Sunlit living room in a modern Dhaka apartment" width="1200" height="1500"
+             fetchpriority="high" decoding="async">
+        <figcaption class="hero__tag">
+          <svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg>
+          Photographed on site
+        </figcaption>
+      </figure>
+
+      <figure class="frame frame--float" data-parallax="-24">
+        <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
+             alt="Interior designer reviewing material samples" width="800" height="800"
+             loading="lazy" decoding="async">
+      </figure>
+
+      <div class="hero__pricecard" data-parallax="18">
+        <p class="kicker">Avg. 3 BHK · Dhanmondi</p>
+        <p class="hero__pricecard-value">৳ <span data-count="1.42" data-count-dec="2">1.42</span> Cr</p>
+        <div class="bar"><span data-bar="72"></span></div>
+        <p class="body-sm muted">72% of buyers close within their budget band</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="ticker" data-ticker>
+      <div class="ticker__track">
+        <span><svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg> Human-verified listings</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg> Real photos, no stock swaps</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> WhatsApp in 15 minutes</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-ruler"></use></svg> Measured square footage</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg> Zero brokerage surprises</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Vetted interior studios</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================== FEATURED FLATS -->
+<section class="section" id="flats">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Handpicked</p>
+        <h2 class="h1">Flats worth a Saturday visit</h2>
+        <p class="lead">Fresh on the platform, checked this week, and ready for a walkthrough.</p>
+      </div>
+      <a class="link-arrow" href="{{ url_for('public.flats') }}">
+        See all flats <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+    </div>
+
+    {% if featured_flats %}
+      <div class="listing-grid" data-reveal-group>
+        {% for flat in featured_flats %}{{ ui.flat_card(flat) }}{% endfor %}
+      </div>
+    {% else %}
+      {{ ui.empty_state(
+           'Nothing live yet',
+           'The first verified flats are on their way',
+           'Listings appear here the moment our team approves them. If you own a flat, you can submit it in about two minutes.',
+           url_for('public.post_listing'), 'Post a flat',
+           url_for('public.interior'), 'Browse interior studios',
+           'building') }}
+    {% endif %}
+  </div>
+</section>
+
+<!-- ================================================= INTERIOR STUDIOS -->
+<section class="section section--tint" id="services">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Interior</p>
+        <h2 class="h1">Studios that finish what they start</h2>
+        <p class="lead">Full-home packages, kitchen rebuilds, and single-room refreshes — with prices stated up front.</p>
+      </div>
+      <a class="link-arrow" href="{{ url_for('public.interior') }}">
+        All studios <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+    </div>
+
+    {% if featured_services %}
+      <div class="listing-grid" data-reveal-group>
+        {% for service in featured_services %}{{ ui.studio_card(service) }}{% endfor %}
+      </div>
+    {% else %}
+      {{ ui.empty_state(
+           'Studios in review',
+           'Interior partners are being onboarded',
+           'We check portfolios, past sites, and pricing before a studio is listed. Are you a designer? Submit your studio today.',
+           url_for('public.post_listing'), 'List your studio',
+           '#contact', 'Talk to us',
+           'couch') }}
+    {% endif %}
+  </div>
+</section>
+
+<!-- ========================================================= PROCESS -->
+<section class="section" id="process">
+  <div class="shell">
+    <div class="section-head section-head--center" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-compass"></use></svg> How it works</p>
+        <h2 class="h1">Four steps from scrolling to keys</h2>
+      </div>
+    </div>
+
+    <svg class="blueprint" viewBox="0 0 1100 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M20 100 C 200 100, 220 20, 380 20 S 560 100, 730 100 S 900 24, 1080 24"/>
+    </svg>
+
+    <ol class="steps" data-reveal-group>
+      <li class="step">
+        <span class="step__no">01</span>
+        <h3 class="h4">Tell us the brief</h3>
+        <p>Budget band, area, BHK, move-in date. One short form, no account needed.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-clipboard-check"></use></svg>
+      </li>
+      <li class="step">
+        <span class="step__no">02</span>
+        <h3 class="h4">Get a shortlist</h3>
+        <p>We send three to five verified options on WhatsApp, with real photos and true carpet area.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-layers"></use></svg>
+      </li>
+      <li class="step">
+        <span class="step__no">03</span>
+        <h3 class="h4">Visit with us</h3>
+        <p>Same-day visits across Dhaka. Our coordinator handles building access and owner timing.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-key"></use></svg>
+      </li>
+      <li class="step">
+        <span class="step__no">04</span>
+        <h3 class="h4">Move in, then design</h3>
+        <p>Hand the keys to a vetted interior studio and get a fixed-scope quote in 72 hours.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-paint"></use></svg>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- =========================================================== ABOUT -->
+<section class="section section--ink" id="about">
+  <div class="shell">
+    <div class="grid grid--split">
+      <div class="stack" data-reveal>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-award"></use></svg> Why FlatLand BD</p>
+        <h2 class="h1">We would rather list ten honest flats than a thousand ghosts.</h2>
+        <p class="lead">
+          Property hunting in Bangladesh breaks down for one reason: listings that do not exist.
+          We fix that with a review queue, a site visit, and a photo standard — before anything is published.
+        </p>
+        <ul class="tick-list">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Owner identity and paperwork sighted before approval</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Photos must match the flat as it stands today</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Prices published in full — brokerage stated separately</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Interior quotes broken down room by room</li>
+        </ul>
+        <div class="row">
+          <a class="btn btn--lg" href="#contact">Request a quote</a>
+          <a class="btn btn--lg btn--ghost btn--on-ink" href="{{ url_for('public.post_listing') }}">List your property</a>
+        </div>
+      </div>
+
+      <div class="metrics" data-reveal="right">
+        <div class="metric">
+          <p class="metric__value"><span data-count="{{ stats.flats or 0 }}">{{ stats.flats or 0 }}</span></p>
+          <p class="metric__label">Verified flats live</p>
+        </div>
+        <div class="metric">
+          <p class="metric__value"><span data-count="{{ stats.studios or 0 }}">{{ stats.studios or 0 }}</span></p>
+          <p class="metric__label">Interior studios</p>
+        </div>
+        <div class="metric">
+          <p class="metric__value"><span data-count="96" data-count-suffix="%">96%</span></p>
+          <p class="metric__label">Enquiries answered same day</p>
+        </div>
+        <div class="metric">
+          <p class="metric__value"><span data-count="0" data-count-suffix=" ৳">0 ৳</span></p>
+          <p class="metric__label">Charged to browse or enquire</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================== TESTIMONIALS -->
+<section class="section section--tint">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-quote"></use></svg> Client notes</p>
+        <h2 class="h1">What buyers tell us afterwards</h2>
+      </div>
+    </div>
+
+    <div class="grid grid--3" data-reveal-group>
+      <figure class="quote-card hover-lift">
+        <div class="stars" aria-label="5 out of 5">
+          {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
+        </div>
+        <blockquote>“Three flats, three visits, one Saturday. The photos were exactly what we walked into — that never happens here.”</blockquote>
+        <figcaption><strong>Nusrat &amp; Tanvir</strong><span>3 BHK · Dhanmondi</span></figcaption>
+      </figure>
+      <figure class="quote-card hover-lift">
+        <div class="stars" aria-label="5 out of 5">
+          {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
+        </div>
+        <blockquote>“The interior studio gave a room-by-room quote in two days and held the price to the last invoice.”</blockquote>
+        <figcaption><strong>Rifat H.</strong><span>Full home · Bashundhara</span></figcaption>
+      </figure>
+      <figure class="quote-card hover-lift">
+        <div class="stars" aria-label="5 out of 5">
+          {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
+        </div>
+        <blockquote>“I listed my flat at 11pm and had a coordinator on the phone the next morning. Rented in nine days.”</blockquote>
+        <figcaption><strong>Shahana K.</strong><span>Owner · Uttara</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= CONTACT -->
+<section class="section" id="contact">
+  <div class="shell">
+    <div class="contact" data-reveal>
+      <div class="contact__intro">
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-message"></use></svg> Request a quote</p>
+        <h2 class="h1">Tell us what you need. We reply the same day.</h2>
+        <p class="lead">
+          Buying, renting, or redesigning — one message is enough to start. No account, no fee, no spam.
+        </p>
+
+        <ul class="contact-lines">
+          <li>
+            <span class="contact-lines__ic"><svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg></span>
+            <div><strong>Call</strong><a href="tel:+8801712458794">+880 1712 458794</a></div>
+          </li>
+          <li>
+            <span class="contact-lines__ic"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg></span>
+            <div><strong>WhatsApp</strong><a href="https://wa.me/8801712458794" target="_blank" rel="noopener">Chat now · replies in ~15 min</a></div>
+          </li>
+          <li>
+            <span class="contact-lines__ic"><svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg></span>
+            <div><strong>Studio</strong><span>Hashem Mansion, Level-1, 48 Kazi Nazrul Islam Ave, Dhaka 1215</span></div>
+          </li>
+          <li>
+            <span class="contact-lines__ic"><svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg></span>
+            <div><strong>Hours</strong><span>Saturday – Thursday, 10:00 – 20:00</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <form class="contact__form" method="POST" action="{{ url_for('public.contact') }}" data-veil>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-grid-2">
+          <label class="field">
+            <span class="field__label">Your name <em>*</em></span>
+            <input class="input" type="text" name="name" required maxlength="120" placeholder="e.g. Ariful Haque" autocomplete="name">
+          </label>
+          <label class="field">
+            <span class="field__label">Phone <em>*</em></span>
+            <input class="input" type="tel" name="phone" required placeholder="01XXXXXXXXX" autocomplete="tel" inputmode="tel">
+          </label>
+        </div>
+
+        <div class="form-grid-2">
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input class="input" type="email" name="email" placeholder="you@example.com" autocomplete="email">
+          </label>
+          <label class="field">
+            <span class="field__label">I am looking for</span>
+            <select class="select" name="interest">
+              <option value="Buy a flat">Buy a flat</option>
+              <option value="Rent a flat">Rent a flat</option>
+              <option value="Interior design">Interior design</option>
+              <option value="List my property">List my property</option>
+              <option value="Something else">Something else</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-grid-2">
+          <label class="field">
+            <span class="field__label">Budget</span>
+            <select class="select" name="budget">
+              <option value="">No fixed budget yet</option>
+              <option value="Under 50 Lakh">Under ৳ 50 Lakh</option>
+              <option value="50 Lakh - 1 Crore">৳ 50 Lakh – 1 Crore</option>
+              <option value="1 - 2 Crore">৳ 1 – 2 Crore</option>
+              <option value="Above 2 Crore">Above ৳ 2 Crore</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">Timeline</span>
+            <select class="select" name="timeline">
+              <option value="">Flexible</option>
+              <option value="This month">This month</option>
+              <option value="1-3 months">1 – 3 months</option>
+              <option value="3-6 months">3 – 6 months</option>
+              <option value="Just researching">Just researching</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Service type (for interior work)</span>
+          <input class="input" type="text" name="service_type" placeholder="Full home, kitchen, single room…" maxlength="120">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Your message <em>*</em></span>
+          <textarea class="textarea" name="message" rows="4" required maxlength="1200"
+                    placeholder="Area, BHK, floor preference, move-in date — anything that helps us shortlist."
+                    data-counter-for="contact-count"></textarea>
+          <span class="field__hint"><span id="contact-count">0</span> / 1200 characters</span>
+        </label>
+
+        <input type="hidden" name="contact" value="">
+
+        <button class="btn btn--lg btn--block btn-arrow" type="submit">
+          Send my request
+          <svg class="i" aria-hidden="true"><use href="#i-send"></use></svg>
+        </button>
+        <p class="body-sm muted" style="text-align:center;margin:0">
+          <svg class="i" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"></use></svg>
+          Your details stay encrypted and are never resold.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== CTA BAND -->
+<section class="cta-band">
+  <div class="shell cta-band__inner" data-reveal>
+    <div>
+      <h2 class="h2">Own a flat or run an interior studio?</h2>
+      <p class="lead">Publish it free. We review, photograph, and put it in front of buyers who are already searching.</p>
+    </div>
+    <a class="btn btn--lg btn--ink btn-arrow" href="{{ url_for('public.post_listing') }}">
+      Post a listing
+      <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+    </a>
+  </div>
+</section>
+
+{% endblock %}

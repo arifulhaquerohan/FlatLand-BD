@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% import "components/cards.html" as ui %}
+
+{% set wa_base = 'https://wa.me/8801712458794' %}
+{% set hero_image = service.image_url or 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1400&q=80' %}
+{% set meta_description = (service.description | striptags | truncate(155, True)) if service.description else (service.provider_name ~ ' — ' ~ service.service_type ~ ' interior studio on FlatLand BD.') %}
+{% set meta_image = optimized_image_url(hero_image, 1200) %}
+{% set meta_type = 'product' %}
+
+{% block title %}{{ service.provider_name }} — {{ service.service_type }} | FlatLand BD{% endblock %}
+
+{% block content %}
+{% set gallery = [hero_image] + (service.images | map(attribute='image_url') | list) %}
+
+<section class="detail">
+  <div class="shell">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="{{ url_for('public.index') }}">Home</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <a href="{{ url_for('public.interior') }}">Interior studios</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <span aria-current="page">{{ service.provider_name | truncate(38, True) }}</span>
+    </nav>
+
+    <div class="detail__grid">
+      <div class="detail__main">
+
+        <div class="gallery" data-gallery data-reveal>
+          <figure class="gallery__stage">
+            <img data-gallery-stage
+                 src="{{ optimized_image_url(gallery[0], 1400) }}"
+                 alt="{{ service.provider_name }} portfolio" width="1400" height="933"
+                 fetchpriority="high" decoding="async"
+                 data-zoom data-zoom-group="studio-{{ service.id }}">
+            <span class="gallery__hint">
+              <svg class="i" aria-hidden="true"><use href="#i-maximize"></use></svg> Tap to enlarge
+            </span>
+            <span class="badge badge--glass gallery__badge">
+              <svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> {{ service.service_type }}
+            </span>
+          </figure>
+
+          {% if gallery | length > 1 %}
+          <div class="gallery__thumbs" role="list">
+            {% for shot in gallery %}
+            <button class="gallery__thumb {{ 'is-active' if loop.first else '' }}" type="button" role="listitem"
+                    data-gallery-thumb
+                    data-src="{{ optimized_image_url(shot, 1400) }}"
+                    data-srcset="{{ optimized_image_srcset(shot, (640, 900, 1400)) }}"
+                    aria-label="View portfolio image {{ loop.index }}">
+              <img src="{{ optimized_image_url(shot, 240) }}" alt="" loading="lazy" decoding="async" width="240" height="180">
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="stack" data-reveal>
+          <div class="detail__title-row">
+            <div>
+              <p class="listing__meta">
+                <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Interior studio
+              </p>
+              <h1 class="h1">{{ service.provider_name }}</h1>
+            </div>
+            <span class="badge badge--sage">
+              <svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Accepting projects
+            </span>
+          </div>
+
+          <div class="spec-grid">
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg>
+              <p class="spec__value spec__value--sm">{{ service.service_type }}</p>
+              <p class="spec__label">Speciality</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-tag"></use></svg>
+              <p class="spec__value spec__value--sm">{{ ui.price_tag(service.starting_price, 'On request') }}</p>
+              <p class="spec__label">Starting from</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-images"></use></svg>
+              <p class="spec__value">{{ gallery | length }}</p>
+              <p class="spec__label">Portfolio shots</p>
+            </div>
+            <div class="spec">
+              <svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg>
+              <p class="spec__value spec__value--sm">72 hrs</p>
+              <p class="spec__label">Quote turnaround</p>
+            </div>
+          </div>
+
+          <div class="rich">
+            <h2 class="h3">About the studio</h2>
+            <p>{{ service.description or 'This studio has not added a profile description yet. Message us and we will share recent projects, materials, and pricing.' }}</p>
+          </div>
+
+          <div class="grid grid--2">
+            <article class="card card--pad">
+              <span class="card__ic"><svg class="i" aria-hidden="true"><use href="#i-clipboard-check"></use></svg></span>
+              <h3 class="h4">How pricing works</h3>
+              <p class="muted">A site measure comes first, then a written scope per room. The starting price above covers basic finishes for a standard room.</p>
+            </article>
+            <article class="card card--pad">
+              <span class="card__ic"><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg></span>
+              <h3 class="h4">Payment protection</h3>
+              <p class="muted">Pay in milestones tied to delivered work. Never settle the full amount before handover.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <aside class="aside-stack" data-reveal="right">
+        <div class="price-card">
+          <p class="kicker">Starting price</p>
+          <p class="price-card__value">{{ ui.price_tag(service.starting_price, 'On request') }}</p>
+          <p class="body-sm muted">Final quote depends on rooms, materials, and site condition.</p>
+
+          <div class="stack stack--sm" style="margin-top:var(--s4)">
+            <a class="btn btn--block btn-arrow"
+               href="{{ wa_base }}?text={{ ('Hello FlatLand BD, I want a quote from ' ~ service.provider_name ~ ' for ' ~ service.service_type ~ '.') | urlencode }}"
+               target="_blank" rel="noopener">
+              <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> Request a quote
+            </a>
+            <a class="btn btn--block btn--ghost" href="tel:+8801712458794">
+              <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg> Call to discuss
+            </a>
+            {% if service.portfolio_url %}
+            <a class="btn btn--block btn--soft" href="{{ service.portfolio_url }}" target="_blank" rel="noopener nofollow">
+              <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg> Full portfolio
+            </a>
+            {% endif %}
+          </div>
+
+          <ul class="tick-list tick-list--sm">
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Portfolio reviewed by our team</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Written scope before payment</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg> Free to enquire</li>
+          </ul>
+        </div>
+
+        <div class="panel panel--tight">
+          <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg> Compare studios</p>
+          <p class="body-sm">Send one brief and we will return up to three comparable quotes so you can judge value, not just price.</p>
+          <a class="btn btn--sm btn--block" href="{{ url_for('public.index') }}#contact">Get 3 quotes</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+{% if related_services %}
+<section class="section section--tint">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Also consider</p>
+        <h2 class="h1">Other studios in this space</h2>
+      </div>
+      <a class="link-arrow" href="{{ url_for('public.interior') }}">
+        All studios <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+    </div>
+    <div class="listing-grid" data-reveal-group>
+      {% for item in related_services %}{{ ui.studio_card(item) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

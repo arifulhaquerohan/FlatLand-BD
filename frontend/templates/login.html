@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in | FlatLand BD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="authx">
+  <div class="authx__bg" aria-hidden="true">
+    <div class="authx__orb authx__orb--a"></div>
+    <div class="authx__orb authx__orb--b"></div>
+    <div class="authx__orb authx__orb--c"></div>
+    <div class="authx__grid"></div>
+  </div>
+
+  <div class="authx__chip authx__chip--tl" aria-hidden="true">
+    <svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg>
+    Human-verified listings
+  </div>
+  <div class="authx__chip authx__chip--br" aria-hidden="true">
+    <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
+    Replies in ~15 min
+  </div>
+
+  <div class="authx__card">
+    <a class="authx__brand" href="{{ url_for('public.index') }}" aria-label="FlatLand BD home">
+      <img class="authx__brand-mark" src="{{ static_url('img/logo-icon.svg') }}" alt="" width="42" height="42">
+      <span class="authx__brand-name">FlatLand<span>BD</span></span>
+    </a>
+
+    <div class="authx__head">
+      <p class="authx__kicker"><svg class="i" aria-hidden="true"><use href="#i-key"></use></svg> Welcome back</p>
+      <h1 class="authx__title">Sign in to your account</h1>
+      <p class="authx__lead">Publish a flat, track approvals, and reply to buyers who are already asking.</p>
+    </div>
+
+    <form class="authx__form" method="POST" action="{{ url_for('public.login') }}" data-veil>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="authx__field" style="--d:0">
+        <label class="authx__label" for="login-id">Username or mobile number</label>
+        <span class="input-wrap">
+          <svg class="i input-wrap__ic" aria-hidden="true" data-login-ic><use href="#i-user"></use></svg>
+          <input class="input input--with-ic" id="login-id" type="text" name="identifier" required autofocus
+                 autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off"
+                 placeholder="rohan_dhaka or 01712345678" data-login-id>
+        </span>
+        <span class="field__hint" data-login-hint>Your username, your 11-digit mobile number, or your email.</span>
+      </div>
+
+      <div class="authx__field" style="--d:1">
+        <label class="authx__label" for="login-password">Password</label>
+        <span class="pw-wrap">
+          <input class="input" type="password" name="password" required autocomplete="current-password"
+                 placeholder="••••••••" id="login-password">
+          <button class="pw-toggle" type="button" data-pw-toggle="#login-password" aria-label="Show password">
+            <svg class="i" aria-hidden="true"><use href="#i-eye"></use></svg>
+          </button>
+        </span>
+      </div>
+
+      <div class="authx__row" style="--d:2">
+        <label class="check">
+          <input type="checkbox" name="remember" value="1">
+          <span>Keep me signed in</span>
+        </label>
+        <a class="body-sm" href="{{ url_for('public.index') }}#contact">Need help?</a>
+      </div>
+
+      <button class="btn btn--lg btn--block btn-arrow authx__submit" type="submit" style="--d:3">
+        Sign in
+        <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </button>
+
+      <p class="authx__alt" style="--d:4">
+        New to FlatLand BD?
+        <a href="{{ url_for('public.register') }}">Create a free account</a>
+      </p>
+
+      <p class="authx__fine" style="--d:5">
+        <svg class="i" aria-hidden="true"><use href="#i-lock"></use></svg>
+        Phone numbers and emails are stored encrypted.
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

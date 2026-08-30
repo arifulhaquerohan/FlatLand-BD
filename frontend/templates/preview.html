@@ -1,0 +1,97 @@
+{% extends "admin_base.html" %}
+{% set admin_nav = 'preview' %}
+
+{% block admin_page_title %}Live preview{% endblock %}
+{% block admin_kicker %}System · Visual check{% endblock %}
+{% block admin_page_description %}See exactly what visitors see, at three screen sizes, without leaving the console.{% endblock %}
+
+{% block admin_header_actions %}
+<a class="btn btn--sm btn--ghost" href="{{ initial_path }}" target="_blank" rel="noopener">
+  <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg> Open in new tab
+</a>
+<button class="btn btn--sm" type="button" data-preview-reload>
+  <svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg> Reload
+</button>
+{% endblock %}
+
+{% block content %}
+<section class="panel panel--flush">
+  <div class="preview__bar">
+    <div class="preview__pages" role="tablist" aria-label="Pages">
+      {% for entry in preview_pages %}
+      <button class="chip chip--btn {{ 'is-on' if entry.path == initial_path else '' }}"
+              type="button" role="tab"
+              aria-selected="{{ 'true' if entry.path == initial_path else 'false' }}"
+              data-preview-path="{{ entry.path }}">{{ entry.label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="preview__devices" role="group" aria-label="Screen size">
+      <button class="icon-btn icon-btn--sm is-on" type="button" data-device="desktop"
+              aria-label="Desktop width" title="Desktop">
+        <svg class="i" aria-hidden="true"><use href="#i-monitor"></use></svg>
+      </button>
+      <button class="icon-btn icon-btn--sm" type="button" data-device="tablet"
+              aria-label="Tablet width" title="Tablet">
+        <svg class="i" aria-hidden="true"><use href="#i-tablet"></use></svg>
+      </button>
+      <button class="icon-btn icon-btn--sm" type="button" data-device="smartphone"
+              aria-label="Phone width" title="Phone">
+        <svg class="i" aria-hidden="true"><use href="#i-smartphone"></use></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="preview__stage">
+    <div class="preview__device" data-device-frame="desktop">
+      <div class="preview__frame">
+        <iframe data-preview-frame src="{{ initial_path }}" title="Live preview of the public website"
+                loading="lazy" referrerpolicy="same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <p class="preview__note">
+    <svg class="i" aria-hidden="true"><use href="#i-info"></use></svg>
+    Showing <code data-preview-current>{{ initial_path }}</code>. Only approved listings appear here, exactly like a
+    real visitor sees them. Interactions inside the frame do not change any data.
+  </p>
+</section>
+
+<div class="grid grid--split-wide">
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-target"></use></svg> What to look for</h2>
+    </header>
+    <ul class="tick-list tick-list--sm">
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Every card shows a photo. Missing photos fall back to a stock image, which looks generic on the homepage.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Prices read correctly in Taka, and locations are spelled the way buyers search for them.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        On phone width, the bottom dock and the WhatsApp button never cover text.</li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>
+        Detail pages open the right gallery, and the enquiry form is reachable without hunting.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <header class="panel__head">
+      <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-zap"></use></svg> Shortcuts</h2>
+    </header>
+    <dl class="kv">
+      <div><dt>Command palette</dt><dd><span class="kbd">⌘</span> <span class="kbd">K</span></dd></div>
+      <div><dt>Jump to search</dt><dd><span class="kbd">/</span></dd></div>
+      <div><dt>Close dialogs</dt><dd><span class="kbd">Esc</span></dd></div>
+    </dl>
+    <div class="row row--tight" style="margin-top:14px">
+      <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg> Pending queue
+      </a>
+      <a class="btn btn--sm btn--ghost" href="{{ url_for('admin.media_library') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg> Media
+      </a>
+    </div>
+  </section>
+</div>
+{% endblock %}

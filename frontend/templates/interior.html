@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% import "components/cards.html" as ui %}
+
+{% block title %}Interior design studios in Bangladesh | FlatLand BD{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="hero__mesh hero__mesh--soft" aria-hidden="true"></div>
+  <div class="shell">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="{{ url_for('public.index') }}">Home</a>
+      <svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+      <span aria-current="page">Interior studios</span>
+    </nav>
+
+    <div class="page-head__grid">
+      <div class="stack stack--sm" data-reveal>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Design partners</p>
+        <h1 class="display display--sm">Interior studios with published prices</h1>
+        <p class="lead">
+          {% if total_services %}
+            <strong>{{ total_services }}</strong> {{ 'studio' if total_services == 1 else 'studios' }} listed —
+            portfolios reviewed, starting prices stated up front.
+          {% else %}
+            Portfolios reviewed, past sites checked, and starting prices stated before you enquire.
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="page-head__aside" data-reveal="right">
+        <div class="panel panel--tight">
+          <p class="kicker">Design brief</p>
+          <p class="body-sm">Share your rooms and budget once. We route it to studios that fit.</p>
+          <a class="btn btn--sm btn--block" href="{{ url_for('public.index') }}#contact">Get 3 quotes</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--flush">
+  <div class="shell">
+    <div class="eyebrow-row" data-reveal>
+      <span class="chip chip--static"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Full home</span>
+      <span class="chip chip--static"><svg class="i" aria-hidden="true"><use href="#i-hammer"></use></svg> Kitchen &amp; wardrobe</span>
+      <span class="chip chip--static"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Single room refresh</span>
+      <span class="chip chip--static"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Office fit-out</span>
+    </div>
+
+    {% if services %}
+      <div class="listing-grid" data-reveal-group>
+        {% for service in services %}{{ ui.studio_card(service) }}{% endfor %}
+      </div>
+      {{ ui.pager(page, has_prev, has_next, prev_url, next_url) }}
+    {% else %}
+      {{ ui.empty_state(
+           'Onboarding',
+           'Studios are being verified now',
+           'We check portfolios, site references, and pricing before publishing a studio. If you run one, apply today.',
+           url_for('public.post_listing'), 'List your studio',
+           url_for('public.flats'), 'Browse flats',
+           'couch') }}
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="shell">
+    <div class="section-head section-head--center" data-reveal>
+      <div>
+        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-clipboard-check"></use></svg> What you get</p>
+        <h2 class="h1">A quote you can actually compare</h2>
+      </div>
+    </div>
+
+    <div class="grid grid--3" data-reveal-group>
+      <article class="card card--pad hover-lift">
+        <span class="card__ic"><svg class="i" aria-hidden="true"><use href="#i-file"></use></svg></span>
+        <h3 class="h4">Room-by-room pricing</h3>
+        <p class="muted">No lump sums. Every studio breaks the quote into rooms, materials, and labour.</p>
+      </article>
+      <article class="card card--pad hover-lift">
+        <span class="card__ic"><svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg></span>
+        <h3 class="h4">Dated timelines</h3>
+        <p class="muted">Start date, milestone dates, and handover date agreed before work begins.</p>
+      </article>
+      <article class="card card--pad hover-lift">
+        <span class="card__ic"><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg></span>
+        <h3 class="h4">Workmanship cover</h3>
+        <p class="muted">Listed studios stand behind their finish for a stated warranty period.</p>
+      </article>
+    </div>
+  </div>
+</section>
+{% endblock %}

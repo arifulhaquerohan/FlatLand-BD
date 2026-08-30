@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf9f6">
+
+{% set page_title = (self.title() | striptags | trim) %}
+{% set page_description = meta_description if meta_description is defined else default_meta_description %}
+{% set page_image = meta_image if meta_image is defined else default_og_image %}
+{% set page_type = meta_type if meta_type is defined else 'website' %}
+{% set canonical_url = canonical if canonical is defined else request.base_url %}
+{% set active_endpoint = (request.endpoint or '').split('.')[-1] %}
+{% set quote_target = '#contact' if active_endpoint in ['index', 'interior', 'flat_detail', 'interior_detail'] else url_for('public.index') ~ '#contact' %}
+
+<title>{% block title %}FlatLand BD — Flats & interior design in Bangladesh{% endblock %}</title>
+<meta name="description" content="{{ page_description }}">
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow">
+<meta name="author" content="FlatLand BD">
+<meta name="format-detection" content="telephone=no">
+<meta property="og:site_name" content="FlatLand BD">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_description }}">
+<meta property="og:type" content="{{ page_type }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ page_image }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page_title }}">
+<meta name="twitter:description" content="{{ page_description }}">
+<meta name="twitter:image" content="{{ page_image }}">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+{% if cloudinary_cloud_name %}<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>{% endif %}
+<link rel="dns-prefetch" href="https://images.unsplash.com">
+{% block preload %}{% endblock %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600&family=Sora:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600&display=swap&text=%E0%A7%B3">
+<link rel="stylesheet" href="{{ static_url('css/core.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+<link rel="icon" type="image/svg+xml" href="{{ static_url('img/logo-icon.svg') }}">
+<link rel="apple-touch-icon" href="{{ static_url('img/logo-icon.svg') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+{% block extra_css %}{% endblock %}
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "RealEstateAgent",
+      "name": "FlatLand BD",
+      "url": "{{ request.url_root.rstrip('/') }}",
+      "logo": "{{ url_for('static', filename='img/logo-mark.svg', _external=True) }}",
+      "image": "{{ page_image }}",
+      "telephone": "+8801712458794",
+      "priceRange": "৳৳",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Hashem Mansion, Level-1, 48 Kazi Nazrul Islam Ave",
+        "addressLocality": "Dhaka",
+        "postalCode": "1215",
+        "addressCountry": "BD"
+      },
+      "areaServed": "Bangladesh"
+    },
+    {
+      "@type": "WebSite",
+      "name": "FlatLand BD",
+      "url": "{{ request.url_root.rstrip('/') }}",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "{{ request.url_root.rstrip('/') }}/flats?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  ]
+}
+</script>
+</head>
+
+<body class="has-dock{% if active_endpoint in ['login', 'register'] %} is-auth{% endif %}">
+{% include "components/sprite.html" %}
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="progress-rail" aria-hidden="true"><div class="progress-rail__fill" data-progress></div></div>
+
+<header class="masthead" data-masthead>
+  <div class="shell masthead__inner">
+    <a class="brand" href="{{ url_for('public.index') }}" aria-label="FlatLand BD home">
+      <img class="brand__mark" src="{{ static_url('img/logo-icon.svg') }}" alt="" width="38" height="38" decoding="async">
+      <span class="brand__text">
+        <span class="brand__name">FlatLand<span style="color:var(--clay-strong)">BD</span></span>
+        <span class="brand__sub">Flats &amp; Interiors</span>
+      </span>
+    </a>
+
+    <nav class="navlinks" aria-label="Primary">
+      <a class="navlink {{ 'is-active' if active_endpoint == 'index' else '' }}" href="{{ url_for('public.index') }}">Home</a>
+      <a class="navlink {{ 'is-active' if active_endpoint in ['flats', 'flat_detail'] else '' }}" href="{{ url_for('public.flats') }}">Buy flats</a>
+      <a class="navlink {{ 'is-active' if active_endpoint in ['interior', 'interior_detail'] else '' }}" href="{{ url_for('public.interior') }}">Interior studios</a>
+      <a class="navlink" href="{{ url_for('public.index') }}#process">How it works</a>
+      <a class="navlink" href="{{ url_for('public.index') }}#contact">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      {% if current_user.is_authenticated %}
+        <div class="menu" data-menu>
+          <button class="icon-btn" type="button" data-menu-btn aria-expanded="false" aria-haspopup="true" aria-label="Account menu">
+            <svg class="i" aria-hidden="true"><use href="#i-user-circle"></use></svg>
+          </button>
+          <div class="menu__panel" role="menu">
+            <div class="menu__head">
+              <p class="body-sm muted" style="margin:0">Signed in as</p>
+              <p style="margin:0;font-weight:600">{{ current_user.full_name }}</p>
+            </div>
+            <a class="menu__item" role="menuitem" href="{{ url_for('public.dashboard') }}">
+              <svg class="i" aria-hidden="true"><use href="#i-grid"></use></svg> My dashboard
+            </a>
+            <a class="menu__item" role="menuitem" href="{{ url_for('public.post_listing') }}">
+              <svg class="i" aria-hidden="true"><use href="#i-plus-circle"></use></svg> Post a listing
+            </a>
+            <a class="menu__item menu__item--danger" role="menuitem" href="{{ url_for('public.logout') }}">
+              <svg class="i" aria-hidden="true"><use href="#i-log-out"></use></svg> Sign out
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <a class="btn btn--ghost btn--sm desk-only" href="{{ url_for('public.login') }}">Sign in</a>
+      {% endif %}
+
+      <a class="btn btn--sm btn-arrow desk-only" href="{{ quote_target }}">
+        Request a quote
+        <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+
+      <button class="icon-btn burger" type="button" data-drawer-toggle aria-expanded="false" aria-controls="drawer" aria-label="Open menu">
+        <svg class="i" aria-hidden="true" data-burger-open><use href="#i-menu"></use></svg>
+        <svg class="i" aria-hidden="true" data-burger-close style="display:none"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="drawer" id="drawer" data-drawer>
+  <nav class="stack" aria-label="Mobile">
+    <a class="drawer__link {{ 'is-active' if active_endpoint == 'index' else '' }}" href="{{ url_for('public.index') }}">Home <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+    <a class="drawer__link {{ 'is-active' if active_endpoint in ['flats', 'flat_detail'] else '' }}" href="{{ url_for('public.flats') }}">Buy flats <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+    <a class="drawer__link {{ 'is-active' if active_endpoint in ['interior', 'interior_detail'] else '' }}" href="{{ url_for('public.interior') }}">Interior studios <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+    <a class="drawer__link" href="{{ url_for('public.index') }}#process">How it works <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+    <a class="drawer__link" href="{{ url_for('public.index') }}#contact">Contact <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></a>
+
+    <div class="stack stack--sm" style="margin-top:var(--s5)">
+      {% if current_user.is_authenticated %}
+        <a class="btn btn--ink btn--block" href="{{ url_for('public.dashboard') }}">My dashboard</a>
+        <a class="btn btn--block" href="{{ url_for('public.post_listing') }}">Post a listing</a>
+        <a class="btn btn--ghost btn--block" href="{{ url_for('public.logout') }}">Sign out</a>
+      {% else %}
+        <a class="btn btn--block" href="{{ url_for('public.login') }}">Sign in</a>
+        <a class="btn btn--ghost btn--block" href="{{ url_for('public.register') }}">Create an account</a>
+      {% endif %}
+    </div>
+  </nav>
+</div>
+
+{% set flashes = [] %}
+{% for category, message in get_flashed_messages(with_categories=true) %}
+  {% set _ = flashes.append({'category': category, 'message': message}) %}
+{% endfor %}
+{% if flashes %}
+<script type="application/json" data-flashes>{{ flashes | tojson }}</script>
+<noscript>
+  <div class="shell" style="padding-top:var(--s4)">
+    {% for item in flashes %}
+    <div class="note note--{{ 'sage' if item.category == 'success' else 'rose' if item.category in ['danger', 'error'] else 'amber' if item.category == 'warning' else 'info' }}">
+      <svg class="i" aria-hidden="true"><use href="#i-info"></use></svg>
+      <div>{{ item.message }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</noscript>
+{% endif %}
+
+<div class="toasts" data-toasts role="status" aria-live="polite"></div>
+
+<main id="main">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="shell footer__inner">
+    <div class="footer__grid">
+      <div class="stack">
+        <img src="{{ static_url('img/logo-mark-light.svg') }}" alt="FlatLand BD" width="180" height="48" style="height:44px;width:auto" loading="lazy" decoding="async">
+        <p style="color:rgba(246,241,234,.7);max-width:34ch">
+          Curated flats and interior studios across Bangladesh — verified listings, real photos, and a human on the other end of every enquiry.
+        </p>
+        <div class="row row--tight">
+          <a class="btn btn--sm" href="tel:+8801712458794">
+            <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg> 01712458794
+          </a>
+          <a class="btn btn--sm btn--ghost" href="https://wa.me/8801712458794" target="_blank" rel="noopener" style="border-color:rgba(255,255,255,.3);color:#f6f1ea">
+            <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <h4>Explore</h4>
+        <ul class="footer__links">
+          <li><a href="{{ url_for('public.flats') }}">Buy flats</a></li>
+          <li><a href="{{ url_for('public.interior') }}">Interior studios</a></li>
+          <li><a href="{{ url_for('public.post_listing') }}">List your property</a></li>
+          <li><a href="{{ quote_target }}">Request a quote</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Company</h4>
+        <ul class="footer__links">
+          <li><a href="{{ url_for('public.index') }}#about">About us</a></li>
+          <li><a href="{{ url_for('public.index') }}#process">How it works</a></li>
+          <li><a href="{{ url_for('public.login') }}">Sign in</a></li>
+          <li><a href="{{ url_for('public.register') }}">Create account</a></li>
+        </ul>
+      </div>
+
+      <div class="stack stack--sm">
+        <h4>Visit the studio</h4>
+        <div class="map-frame">
+          <iframe src="https://www.google.com/maps?q=Hashem%20Mansion%2C%20Level-1%2C%2048%20Kazi%20Nazrul%20Islam%20Ave%2C%20Dhaka%201215%2C%20Bangladesh&amp;output=embed"
+                  title="FlatLand BD office location" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <p class="body-sm" style="color:rgba(246,241,234,.66)">
+          Hashem Mansion, Level-1, 48 Kazi Nazrul Islam Ave, Dhaka 1215
+        </p>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <p style="margin:0">&copy; {{ current_year }} FlatLand BD. All rights reserved.</p>
+      <p style="margin:0">Built for speed, clarity, and trust.</p>
+    </div>
+  </div>
+</footer>
+
+<div class="fab-stack">
+  <button class="fab" type="button" data-totop aria-label="Back to top">
+    <svg class="i" aria-hidden="true"><use href="#i-arrow-up"></use></svg>
+  </button>
+  <a class="fab fab--wa" href="https://wa.me/8801712458794?text=Hello%20FlatLand%20BD%2C%20I%20need%20help." target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+    <svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
+  </a>
+  <a class="fab fab--call" href="tel:+8801712458794" aria-label="Call FlatLand BD">
+    <svg class="i" aria-hidden="true"><use href="#i-phone"></use></svg>
+  </a>
+</div>
+
+<nav class="dock" aria-label="Quick navigation">
+  <a class="dock__item {{ 'is-active' if active_endpoint == 'index' else '' }}" href="{{ url_for('public.index') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Home</span>
+  </a>
+  <a class="dock__item {{ 'is-active' if active_endpoint in ['flats', 'flat_detail'] else '' }}" href="{{ url_for('public.flats') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-building"></use></svg><span>Flats</span>
+  </a>
+  <a class="dock__item {{ 'is-active' if active_endpoint in ['interior', 'interior_detail'] else '' }}" href="{{ url_for('public.interior') }}">
+    <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg><span>Interior</span>
+  </a>
+  <a class="dock__item dock__item--accent" href="{{ quote_target }}">
+    <svg class="i" aria-hidden="true"><use href="#i-message"></use></svg><span>Quote</span>
+  </a>
+</nav>
+
+<div class="route-veil" data-veil aria-hidden="true"><div class="spinner"></div></div>
+
+{% if maintenance_notice %}
+<div class="maint-pop" data-maint-pop role="dialog" aria-modal="true" aria-labelledby="maint-title">
+  <div class="maint-pop__backdrop" data-maint-backdrop></div>
+  <div class="maint-pop__card">
+    <span class="maint-pop__icon"><svg class="i" aria-hidden="true"><use href="#i-settings"></use></svg></span>
+    <span class="maint-pop__pill">Maintenance</span>
+    <h3 id="maint-title">We're giving the site a quick tune-up</h3>
+    <p>FlatLand BD is under scheduled maintenance right now. Everything still works — it may just feel a little slower than usual. Thanks for your patience.</p>
+    <button class="btn btn--block" type="button" data-maint-dismiss>Got it</button>
+  </div>
+</div>
+{% endif %}
+
+<script src="{{ static_url('js/app.js') }}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
