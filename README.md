@@ -1,161 +1,133 @@
-# FlatLand BD
+# FlatLand BD 🏠
 
-Flats and interior studios for Bangladesh. Every listing is checked by a human before it
-goes live, and every enquiry lands in one inbox inside the operations console.
+A full-stack real estate marketplace for Bangladesh — list flats for sale and discover interior design studios, with a complete admin console, Cloudinary-powered image delivery, and security-focused architecture.
 
----
+## ✨ Features
 
-## What this is built with, and why
+### For visitors & members
+- Browse verified **flat listings** with filters (location, BHK, price range, sort) and search
+- Discover **interior design studios** with portfolios and starting prices
+- Member accounts with **username / mobile / email login**, encrypted contact data at rest
+- Members can **post listings** (pending review) and **delete their own listings**
+- Responsive design with lazy-loaded, screen-optimized images
 
-| Layer | Choice | Reason |
-| --- | --- | --- |
-| Server | Flask (Python 3.11) | Runs on shared cPanel hosting with Passenger. No Node process needed in production. |
-| Templates | Jinja | Server rendered HTML, so pages are fast and indexable on cheap hosting. |
-| Styling | Hand written CSS, three files | **No build step.** Edit the file, refresh the browser. Nothing to compile before deploy. |
-| Scripting | Vanilla JS, two files | No framework, no npm install, no lock file to rot. Everything degrades gracefully if JS fails. |
-| Images | Cloudinary, optional | Automatic WebP conversion, resizing and CDN delivery. Falls back to local disk if keys are absent. |
-| Database | SQLite by default, MySQL or Postgres via one variable | Works instantly, upgrades without code changes. |
+### Admin console
+- Dashboard with **live stats and 14-day activity trends**
+- Approve / reject / edit / **bulk-delete** flats & studios
+- Lead management (new → contacted → closed) with **CSV export**
+- **Media library** — see every image, where it's stored, and Cloudinary connection health
+- **System health page** — security, storage, performance, and content checks in one place
+- AI-assisted listing description generator (drop-in LLM-ready)
 
-Tailwind and its build pipeline were removed. There is no `npm run build`; the CSS you
-see in `frontend/static/css` is the CSS the browser gets.
+### Images & Cloudinary ☁️
+- Uploads converted to **WebP**, capped at 1600px
+- Auto-resized delivery with **srcset** for every screen
+- **Deleting a listing, gallery photo, or cover photo also deletes the file from Cloudinary** — no orphaned files
+- Automatic fallback to local storage if Cloudinary is unreachable
 
----
+### Security & performance
+- Encrypted phone/email at rest (blind-indexed lookups)
+- CSRF protection, rate limiting, security headers, HTTPS-only cookies
+- Redis-backed caching & rate limits (in-memory fallback)
+- Gzip/Brotli compression and long-term static caching
 
-## Project layout
+## 🛠 Tech Stack
 
-```
-wsgi.py                    Passenger entry point (exposes `application`)
-requirements.txt           Python dependencies
-.env.example               Every setting, documented. Copy to .env
-CLOUDINARY.md              Ten minute image CDN setup guide
-CPANEL_SETUP.md            Step by step hosting guide
-
-backend/
-  app.py                   App factory, config, security headers, caching
-  models.py                User, Flat, InteriorService, images, Lead, MediaAsset
-  forms.py                 WTForms with CSRF
-  extensions.py            db, login manager, limiter, cache, mail, compress
-  utils.py                 Uploads, image URLs, YouTube embeds, media cleanup
-  utils_security.py        Encryption and hashing for phone and email
-  cloudinary_service.py    Single source of truth for image storage
-  blueprints/
-    public.py              Website: browse, detail, auth, dashboard, post listing
-    admin.py               Console: moderation, leads, media, health, export
-
-frontend/
-  templates/               20 Jinja templates, public site plus console
-  static/css/core.css      Tokens, layout, buttons, forms, shared components
-  static/css/site.css      Public site only
-  static/css/console.css   Admin console only
-  static/js/app.js         Public site interactions and animation
-  static/js/console.js     Console: command palette, bulk actions, charts
-  static/img/              Logo mark and icon
-  static/uploads/          Local image fallback when Cloudinary is off
-```
-
----
-
-## Running it locally
-
-```bash
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env              # then edit the marked values
-python -m backend.app
-```
-
-Open `http://127.0.0.1:5001`. The admin console lives at the path you set in
-`ADMIN_PATH`, for example `http://127.0.0.1:5001/console-x7`.
-
-An admin account is created on first boot from `ADMIN_USERNAME`, `ADMIN_EMAIL` and
-`ADMIN_PASSWORD`. Change the password after the first login.
-
----
-
-## Settings you must set
-
-These four are the difference between a demo and a real deployment:
-
-| Variable | Why it matters |
+| Layer | Tech |
 | --- | --- |
-| `SECRET_KEY` | Signs sessions. Random, 32 bytes or more. |
-| `DATA_ENCRYPTION_KEY` | Encrypts stored phone numbers and emails. **If you lose it, that data is unreadable.** |
-| `ADMIN_PATH` | Moves the console off `/admin` so bots cannot find the login. |
-| `ADMIN_PASSWORD` | The first admin login. |
+| Backend | Python 3.11 · Flask 3.0 · SQLAlchemy |
+| Frontend | Jinja2 templates · custom CSS/JS |
+| Database | SQLite (dev) · PostgreSQL / MySQL (prod) |
+| Images | Pillow · Cloudinary CDN |
+| Auth | Flask-Login · Werkzeug password hashing |
+| Extras | Flask-WTF · Flask-Mail · Flask-Limiter · Flask-Compress · Flask-Caching · Redis |
+| Server | Gunicorn · cPanel/Passenger ready |
 
-Generate the two keys:
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.11+ (3.11 recommended — pins are tested against it)
+- pip & virtualenv
+
+### Install & run
 
 ```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+# 1. Clone & enter the project
+cd flatlandbd
+
+# 2. Create a virtual environment
+python -m venv venv
+source venv/bin/activate        # fish: source venv/bin/activate.fish
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure environment
+cp .env.example .env
+#   → set SECRET_KEY (32+ chars), DATA_ENCRYPTION_KEY,
+#     Cloudinary keys, and admin credentials
+
+# 5. Run (dev)
+python app.py                    # http://localhost:5001
+
+# 6. Run (production)
+gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
 ```
 
-Everything else is documented inline in `.env.example`.
+The app auto-creates the SQLite database and the admin account on first boot.
 
----
+## ☁️ Cloudinary Setup (10 minutes)
 
-## The public site
+1. Create a free account at [cloudinary.com](https://cloudinary.com)
+2. Copy **cloud name, API key, API secret** from Settings → API Keys
+3. Add them to `.env`:
 
-- **Home** — hero with live counts, handpicked flats, studios, how it works, enquiry form.
-- **Buy flats** — search, BHK, price range and four sort orders, with a result summary and
-  an empty state that explains what to widen.
-- **Interior studios** — packages with prices stated up front.
-- **Detail pages** — gallery with lightbox and keyboard navigation, YouTube embeds through
-  the cookie free domain, WhatsApp and call buttons, related listings.
-- **Accounts** — register, sign in, personal dashboard, post a listing through a three step
-  wizard with drag and drop uploads and live previews.
-- **Extras** — scroll progress, reveal on scroll, animated counters, sitemap, robots,
-  custom 404 and 500 pages.
+```ini
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=123456789012345
+CLOUDINARY_API_SECRET=your-secret
+CLOUDINARY_FOLDER=flatlandbd/uploads
+MAX_UPLOAD_MB=24
+```
 
-All motion respects `prefers-reduced-motion`. Content is visible with animation disabled,
-and the site still works with JavaScript switched off.
+4. Restart the app, then verify from the admin **Media** page (Test connection).
 
----
+> Without Cloudinary, uploads fall back to local storage — the site still works.
 
-## The operations console
+## 📁 Project Structure
 
-Reachable at `/<ADMIN_PATH>`, admin accounts only, dark by design so it never gets
-confused with the public site.
+```
+flatlandbd/
+├── app.py                  # entry point (dev)
+├── wsgi.py                 # entry point (production)
+├── requirements.txt
+├── .env.example
+├── backend/
+│   ├── app.py              # Flask app factory & config
+│   ├── models.py           # SQLAlchemy models
+│   ├── cloudinary_service.py
+│   ├── utils.py
+│   └── blueprints/
+│       ├── public.py       # visitor + member routes
+│       └── admin.py        # admin console
+└── frontend/
+    ├── templates/          # Jinja2 templates
+    └── static/             # CSS, JS, images
+```
 
-- **Overview** — counts, a fourteen day submissions and enquiries chart, approval rings,
-  newest listings and enquiries, quick actions.
-- **Flats, Studios, Leads** — one table per tab with search, status filter, instant client
-  side filtering, select all, bulk approve, reject or delete behind a confirm dialog, and
-  per row status changes.
-- **Media and CDN** — every image the site serves, where it is stored, how much is on the
-  CDN, and a one click connection test.
-- **Health and config** — live checks on database, security keys, storage, mail, cache and
-  rate limiting, with the installed package versions.
-- **Live preview** — the public site inside desktop, tablet and phone frames.
-- **Export data** — flats and leads as CSV.
-- **Command palette** — `Cmd K` or `Ctrl K`, jump anywhere. `/` focuses the search box.
+## 🔐 Environment Variables
 
----
+See `.env.example` for the full list. Key ones:
 
-## Images
+| Variable | Purpose |
+| --- | --- |
+| `SECRET_KEY` | Session signing (32+ chars, required) |
+| `DATA_ENCRYPTION_KEY` | Encrypts phone/email at rest |
+| `DATABASE_URL` | SQLite default; PostgreSQL/MySQL supported |
+| `CLOUDINARY_*` | Cloudinary image hosting |
+| `ADMIN_USERNAME/PASSWORD/PHONE` | Auto-creates admin on first boot |
+| `REDIS_URL` | Optional: shared cache & rate-limit store |
 
-Uploads are converted to WebP and capped at 1600px, so a six megabyte phone photo becomes
-a few hundred kilobytes. With Cloudinary keys present, files go to the CDN and visitors get
-a size matched to their screen. Without keys, files go to `frontend/static/uploads` and the
-site works exactly the same, just heavier.
+## 📜 License
 
-Deleting a listing or removing a gallery photo also deletes the stored file, so nothing is
-left orphaned. Setup takes about ten minutes: see `CLOUDINARY.md`.
-
----
-
-## Security posture
-
-CSRF on every form, rate limits on login, registration, enquiries and admin actions,
-hashed passwords, encrypted contact details, a strict Content Security Policy, HTTPS
-redirect and secure cookies behind `FORCE_HTTPS`, and an admin console on a secret path.
-Uploads are validated by extension, decoded by Pillow before being stored, and capped by
-`MAX_UPLOAD_MB` with a friendly page instead of a raw error when the cap is hit.
-
----
-
-## Deploying
-
-See `CPANEL_SETUP.md`. Short version: upload, create a Python 3.11 app pointing at
-`wsgi.py` with entry point `application`, run pip install against `requirements.txt`,
-create `.env`, restart.
+MIT — see [LICENSE](LICENSE).
