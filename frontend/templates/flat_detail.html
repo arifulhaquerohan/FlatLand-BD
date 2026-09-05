@@ -41,7 +41,7 @@
     <div class="detail__grid">
       <div class="detail__main">
 
-        <div class="gallery" data-gallery data-reveal>
+        <div class="gallery" data-gallery data-reveal="blur-up">
           <figure class="gallery__stage">
             <img data-gallery-stage
                  src="{{ optimized_image_url(gallery[0], 1400) }}"
@@ -70,7 +70,7 @@
           {% endif %}
         </div>
 
-        <div class="stack" data-reveal>
+        <div class="stack" data-reveal="blur-up">
           <div class="detail__title-row">
             <div>
               <p class="listing__meta">
@@ -78,7 +78,7 @@
               </p>
               <h1 class="h1">{{ flat.title }}</h1>
             </div>
-            <span class="badge badge--sage">
+            <span class="badge badge--sage has-shine">
               <svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Available
             </span>
           </div>
@@ -195,7 +195,7 @@
 {% if related_flats %}
 <section class="section section--tint">
   <div class="shell">
-    <div class="section-head" data-reveal>
+    <div class="section-head" data-reveal="blur-up">
       <div>
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Similar</p>
         <h2 class="h1">More flats like this one</h2>
@@ -204,7 +204,7 @@
         All flats <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
       </a>
     </div>
-    <div class="listing-grid" data-reveal-group>
+    <div class="listing-grid" data-reveal-group="stagger">
       {% for item in related_flats %}{{ ui.flat_card(item) }}{% endfor %}
     </div>
   </div>

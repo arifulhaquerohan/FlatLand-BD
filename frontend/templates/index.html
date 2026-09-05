@@ -15,6 +15,9 @@
   <div class="hero__orb hero__orb--a" aria-hidden="true"></div>
   <div class="hero__orb hero__orb--b" aria-hidden="true"></div>
   <div class="hero__rules" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <div class="particle-canvas" aria-hidden="true"></div>
+  <div class="morph-blob morph-blob--a" aria-hidden="true"></div>
+  <div class="morph-blob morph-blob--b" aria-hidden="true"></div>
 
   <div class="shell hero__inner">
     <div class="hero__copy">
@@ -58,6 +61,13 @@
           <dd><span data-count="15" data-count-suffix=" min">15 min</span></dd>
         </div>
       </dl>
+
+      <div class="scroll-hint" aria-hidden="true">
+        <div class="scroll-hint__mouse">
+          <div class="scroll-hint__wheel"></div>
+        </div>
+        <span class="scroll-hint__text">Scroll to explore</span>
+      </div>
     </div>
 
     <div class="hero__visual" data-reveal="left">
@@ -101,9 +111,12 @@
 </section>
 
 <!-- =================================================== FEATURED FLATS -->
+<div class="wave-separator" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
 <section class="section" id="flats">
   <div class="shell">
-    <div class="section-head" data-reveal>
+    <div class="section-head" data-reveal="blur-up">
       <div>
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Handpicked</p>
         <h2 class="h1">Flats worth a Saturday visit</h2>
@@ -115,7 +128,7 @@
     </div>
 
     {% if featured_flats %}
-      <div class="listing-grid" data-reveal-group>
+      <div class="listing-grid" data-reveal-group="stagger">
         {% for flat in featured_flats %}{{ ui.flat_card(flat) }}{% endfor %}
       </div>
     {% else %}
@@ -131,9 +144,12 @@
 </section>
 
 <!-- ================================================= INTERIOR STUDIOS -->
+<div class="wave-separator wave-separator--flip" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
 <section class="section section--tint" id="services">
   <div class="shell">
-    <div class="section-head" data-reveal>
+    <div class="section-head" data-reveal="blur-up">
       <div>
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Interior</p>
         <h2 class="h1">Studios that finish what they start</h2>
@@ -145,7 +161,7 @@
     </div>
 
     {% if featured_services %}
-      <div class="listing-grid" data-reveal-group>
+      <div class="listing-grid" data-reveal-group="stagger">
         {% for service in featured_services %}{{ ui.studio_card(service) }}{% endfor %}
       </div>
     {% else %}
@@ -161,9 +177,12 @@
 </section>
 
 <!-- ========================================================= PROCESS -->
+<div class="wave-separator" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
 <section class="section" id="process">
   <div class="shell">
-    <div class="section-head section-head--center" data-reveal>
+    <div class="section-head section-head--center" data-reveal="blur-up">
       <div>
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-compass"></use></svg> How it works</p>
         <h2 class="h1">Four steps from scrolling to keys</h2>
@@ -174,7 +193,7 @@
       <path d="M20 100 C 200 100, 220 20, 380 20 S 560 100, 730 100 S 900 24, 1080 24"/>
     </svg>
 
-    <ol class="steps" data-reveal-group>
+    <ol class="steps" data-reveal-group="stagger">
       <li class="step">
         <span class="step__no">01</span>
         <h3 class="h4">Tell us the brief</h3>
@@ -207,7 +226,7 @@
 <section class="section section--ink" id="about">
   <div class="shell">
     <div class="grid grid--split">
-      <div class="stack" data-reveal>
+      <div class="stack" data-reveal="blur-up">
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-award"></use></svg> Why FlatLand BD</p>
         <h2 class="h1">We would rather list ten honest flats than a thousand ghosts.</h2>
         <p class="lead">
@@ -249,45 +268,52 @@
 </section>
 
 <!-- ==================================================== TESTIMONIALS -->
+<div class="wave-separator wave-separator--flip" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
 <section class="section section--tint">
   <div class="shell">
-    <div class="section-head" data-reveal>
+    <div class="section-head" data-reveal="blur-up">
       <div>
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-quote"></use></svg> Client notes</p>
         <h2 class="h1">What buyers tell us afterwards</h2>
       </div>
     </div>
 
-    <div class="grid grid--3" data-reveal-group>
+    <div class="testimonials-track" data-reveal-group="stagger">
       <figure class="quote-card hover-lift">
         <div class="stars" aria-label="5 out of 5">
           {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
         </div>
-        <blockquote>“Three flats, three visits, one Saturday. The photos were exactly what we walked into — that never happens here.”</blockquote>
+        <blockquote>"Three flats, three visits, one Saturday. The photos were exactly what we walked into — that never happens here."</blockquote>
         <figcaption><strong>Nusrat &amp; Tanvir</strong><span>3 BHK · Dhanmondi</span></figcaption>
       </figure>
       <figure class="quote-card hover-lift">
         <div class="stars" aria-label="5 out of 5">
           {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
         </div>
-        <blockquote>“The interior studio gave a room-by-room quote in two days and held the price to the last invoice.”</blockquote>
+        <blockquote>"The interior studio gave a room-by-room quote in two days and held the price to the last invoice."</blockquote>
         <figcaption><strong>Rifat H.</strong><span>Full home · Bashundhara</span></figcaption>
       </figure>
       <figure class="quote-card hover-lift">
         <div class="stars" aria-label="5 out of 5">
           {% for _ in range(5) %}<svg class="i i--fill" aria-hidden="true"><use href="#i-star"></use></svg>{% endfor %}
         </div>
-        <blockquote>“I listed my flat at 11pm and had a coordinator on the phone the next morning. Rented in nine days.”</blockquote>
+        <blockquote>"I listed my flat at 11pm and had a coordinator on the phone the next morning. Rented in nine days."</blockquote>
         <figcaption><strong>Shahana K.</strong><span>Owner · Uttara</span></figcaption>
       </figure>
     </div>
+    <div class="testimonial-dots" aria-label="Testimonial navigation"></div>
   </div>
 </section>
 
 <!-- ========================================================= CONTACT -->
+<div class="wave-separator" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
 <section class="section" id="contact">
   <div class="shell">
-    <div class="contact" data-reveal>
+    <div class="contact" data-reveal="blur-up">
       <div class="contact__intro">
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-message"></use></svg> Request a quote</p>
         <h2 class="h1">Tell us what you need. We reply the same day.</h2>

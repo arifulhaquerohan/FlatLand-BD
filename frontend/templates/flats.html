@@ -14,7 +14,7 @@
     </nav>
 
     <div class="page-head__grid">
-      <div class="stack stack--sm" data-reveal>
+      <div class="stack stack--sm" data-reveal="blur-up">
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Live inventory</p>
         <h1 class="display display--sm">Flats, checked before they reach you</h1>
         <p class="lead">
@@ -104,7 +104,7 @@
     {% if filters_applied %}
     <div class="active-filters" data-reveal>
       <span class="body-sm muted">Filtering by</span>
-      {% if filters.search %}<span class="tag-x">“{{ filters.search }}”</span>{% endif %}
+      {% if filters.search %}<span class="tag-x">"{{ filters.search }}"</span>{% endif %}
       {% if filters.bhk and filters.bhk != 'all' %}<span class="tag-x">{{ '4+' if filters.bhk == '4plus' else filters.bhk }} BHK</span>{% endif %}
       {% if filters.min_price %}<span class="tag-x">Min {{ filters.min_price | float | format_bdt }}</span>{% endif %}
       {% if filters.max_price %}<span class="tag-x">Max {{ filters.max_price | float | format_bdt }}</span>{% endif %}
@@ -115,7 +115,7 @@
     {% endif %}
 
     {% if flats %}
-      <div class="listing-grid" data-reveal-group>
+      <div class="listing-grid" data-reveal-group="stagger">
         {% for flat in flats %}{{ ui.flat_card(flat) }}{% endfor %}
       </div>
       {{ ui.pager(page, has_prev, has_next, prev_url, next_url) }}
@@ -140,7 +140,7 @@
 </section>
 
 <section class="section section--tint">
-  <div class="shell cta-band__inner" data-reveal>
+  <div class="shell cta-band__inner" data-reveal="blur-up">
     <div>
       <h2 class="h2">Want the shortlist sent to you instead?</h2>
       <p class="lead">Tell us the area and budget once — we send three to five verified options on WhatsApp.</p>

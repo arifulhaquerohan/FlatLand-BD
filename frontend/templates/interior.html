@@ -14,7 +14,7 @@
     </nav>
 
     <div class="page-head__grid">
-      <div class="stack stack--sm" data-reveal>
+      <div class="stack stack--sm" data-reveal="blur-up">
         <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Design partners</p>
         <h1 class="display display--sm">Interior studios with published prices</h1>
         <p class="lead">
@@ -48,7 +48,7 @@
     </div>
 
     {% if services %}
-      <div class="listing-grid" data-reveal-group>
+      <div class="listing-grid" data-reveal-group="stagger">
         {% for service in services %}{{ ui.studio_card(service) }}{% endfor %}
       </div>
       {{ ui.pager(page, has_prev, has_next, prev_url, next_url) }}

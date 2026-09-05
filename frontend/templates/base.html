@@ -39,6 +39,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600&display=swap&text=%E0%A7%B3">
 <link rel="stylesheet" href="{{ static_url('css/core.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/animations.css') }}">
 <link rel="icon" type="image/svg+xml" href="{{ static_url('img/logo-icon.svg') }}">
 <link rel="apple-touch-icon" href="{{ static_url('img/logo-icon.svg') }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -85,6 +86,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="progress-rail" aria-hidden="true"><div class="progress-rail__fill" data-progress></div></div>
+<div class="scroll-progress" aria-hidden="true"><div class="scroll-progress__bar"></div></div>
 
 <header class="masthead" data-masthead>
   <div class="shell masthead__inner">
@@ -288,6 +290,7 @@
 {% endif %}
 
 <script src="{{ static_url('js/app.js') }}" defer></script>
+<script src="{{ static_url('js/animations.js') }}" defer></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
