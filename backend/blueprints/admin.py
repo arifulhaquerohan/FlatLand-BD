@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from ..models import db, User, Flat, InteriorService, FlatImage, InteriorImage, Lead
 # pyrefly: ignore [import-error]
 from ..extensions import limiter
+from ..utils import collect_listing_image_urls, cleanup_listing_media
 # pyrefly: ignore [import-error]
 from ..utils import admin_required, get_listing_item, normalize_status, normalize_lead_status, LISTING_STATUSES, LEAD_STATUSES, coerce_int, coerce_float, save_uploaded_image, parse_image_urls, extract_youtube_id, collect_uploaded_images, paginate_query, get_cached_value, collect_admin_stats, normalize_preview_path, generate_listing_description
 
@@ -26,7 +27,7 @@ from ..models import MediaAsset
 # pyrefly: ignore [import-error]
 from .. import cloudinary_service
 # pyrefly: ignore [import-error]
-from ..utils import delete_listing_media, delete_media_for_urls, media_provider_for_url, is_cloudinary_configured, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
+from ..utils import media_provider_for_url, is_cloudinary_configured, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -179,12 +180,13 @@ def approve_listing(item_type, id):
 @limiter.limit("20 per minute")
 def delete_listing(item_type, id):
     item = get_listing_item(item_type, id)
+    media_urls = collect_listing_image_urls(item)
     db.session.delete(item)
     db.session.commit()
     # Storage is only touched once the row is really gone, so a failed
     # commit can never leave a live listing with dead image URLs.
-    delete_listing_media(item)
     invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
+    cleanup_listing_media(media_urls)
     flash('Listing deleted!', 'success')
     tab = 'flats' if item_type == 'flat' else 'services'
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab=tab))
@@ -252,14 +254,14 @@ def bulk_update_listings(item_type):
         # cascade lives on the ORM relationship and SQLite deployments
         # have no DB-level ON DELETE to fall back on.
         rows = query.all()
+        media_urls = [url for row in rows for url in collect_listing_image_urls(row)]
         for row in rows:
             db.session.delete(row)
         count = len(rows)
         db.session.commit()
         # Storage is only touched once the rows are really gone.
-        for row in rows:
-            delete_listing_media(row)
         invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
+        cleanup_listing_media(media_urls)
         flash(f'{count} listing(s) permanently deleted!', 'success')
     else: abort(400)
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab=redirect_tab))
@@ -295,6 +297,7 @@ def bulk_update_leads():
 def edit_listing(item_type, id):
     item = get_listing_item(item_type, id)
     if request.method == 'POST':
+        media_to_remove = []
         status = normalize_status(request.form.get('status'))
         if status: item.status = status
 
@@ -321,7 +324,7 @@ def edit_listing(item_type, id):
         # If the cover photo was replaced, remove the old file from storage
         # (Cloudinary or local disk) so it does not stay orphaned.
         if old_cover_url and old_cover_url != item.image_url:
-            delete_media_for_urls([old_cover_url])
+            media_to_remove.append(old_cover_url)
 
         if item_type == 'flat':
             item.title = request.form.get('title', '').strip()
@@ -336,7 +339,7 @@ def edit_listing(item_type, id):
             remove_ids = [value for value in remove_ids if value > 0]
             if remove_ids:
                 doomed = FlatImage.query.filter(FlatImage.flat_id == item.id, FlatImage.id.in_(remove_ids)).all()
-                delete_media_for_urls([image.image_url for image in doomed])
+                media_to_remove.extend(image.image_url for image in doomed)
                 for image in doomed:
                     db.session.delete(image)
             extra_urls, invalid = collect_uploaded_images(gallery_files)
@@ -355,7 +358,7 @@ def edit_listing(item_type, id):
             remove_ids = [value for value in remove_ids if value > 0]
             if remove_ids:
                 doomed = InteriorImage.query.filter(InteriorImage.service_id == item.id, InteriorImage.id.in_(remove_ids)).all()
-                delete_media_for_urls([image.image_url for image in doomed])
+                media_to_remove.extend(image.image_url for image in doomed)
                 for image in doomed:
                     db.session.delete(image)
             extra_urls, invalid = collect_uploaded_images(gallery_files)
@@ -367,6 +370,7 @@ def edit_listing(item_type, id):
 
         db.session.commit()
         invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
+        cleanup_listing_media(media_to_remove)
         flash('Listing updated successfully!', 'success')
         return redirect(url_for('admin.admin_dashboard', tab='flats' if item_type == 'flat' else 'services'))
 

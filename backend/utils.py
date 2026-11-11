@@ -2,6 +2,7 @@ import os
 import time
 import re
 import json
+import math
 from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
@@ -172,14 +173,16 @@ def collect_uploaded_images(files):
 
 def coerce_float(value, fallback=0.0):
     try:
-        return float(value)
-    except (TypeError, ValueError):
+        number = float(value)
+        return number if math.isfinite(number) else fallback
+    except (TypeError, ValueError, OverflowError):
         return fallback
 
 def coerce_int(value, fallback=0):
     try:
-        return int(value)
-    except (TypeError, ValueError):
+        number = int(value)
+        return number if -(2**63) <= number <= 2**63 - 1 else fallback
+    except (TypeError, ValueError, OverflowError):
         return fallback
 
 def summarize_text(text, limit=155):
@@ -282,6 +285,8 @@ def collect_admin_stats():
 def paginate_query(query, page, per_page):
     page = max(page, 1)
     offset = (page - 1) * per_page
+    if offset > 2**63 - 1:
+        return [], page > 1, False
     items = query.offset(offset).limit(per_page + 1).all()
     has_next = len(items) > per_page
     return items[:per_page], page > 1, has_next
@@ -475,20 +480,24 @@ def delete_media_url(url):
             current_app.logger.warning('Cloudinary delete failed: %s', outcome.get('error'))
     elif provider == 'local':
         try:
-            relative = str(url).split('/static/', 1)[1]
-            path = os.path.join(current_app.static_folder, relative.replace('/', os.sep))
-            root = os.path.realpath(current_app.static_folder)
+            parsed = urlparse(str(url))
+            if parsed.scheme or parsed.netloc or not parsed.path.startswith('/static/uploads/'):
+                return False
+            relative = parsed.path[len('/static/uploads/'):]
+            root = os.path.realpath(os.path.join(current_app.static_folder, 'uploads'))
+            path = os.path.join(root, relative)
             target = os.path.realpath(path)
-            if target.startswith(root) and os.path.isfile(target):
+            if os.path.commonpath([root, target]) != root:
+                return False
+            if os.path.isfile(target):
                 os.remove(target)
                 removed = True
         except Exception as exc:
             current_app.logger.warning('Local delete failed: %s', exc)
 
-    try:
+    # Preserve metadata when a storage deletion fails so it can be retried.
+    if removed:
         MediaAsset.query.filter_by(image_url=url).delete(synchronize_session=False)
-    except Exception:
-        pass
     return removed
 
 
@@ -523,3 +532,23 @@ def delete_media_for_urls(urls):
         if delete_media_url(url):
             removed += 1
     return removed
+
+
+def cleanup_listing_media(urls):
+    """Clean up only unreferenced images after a listing mutation commits."""
+    unused = []
+    for url in set(urls):
+        if not url:
+            continue
+        referenced = any(
+            db.session.query(model.id).filter(column == url).first() is not None
+            for model, column in (
+                (Flat, Flat.image_url), (InteriorService, InteriorService.image_url),
+                (FlatImage, FlatImage.image_url), (InteriorImage, InteriorImage.image_url),
+            )
+        )
+        if not referenced:
+            unused.append(url)
+    delete_media_for_urls(unused)
+    # File cleanup runs after the listing commit, so metadata needs its own commit.
+    db.session.commit()

@@ -234,11 +234,12 @@
 <div class="wave-separator" aria-hidden="true">
   <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
 </div>
-<section class="section" id="process">
+<section class="section" id="process" aria-labelledby="buying-process-title">
   <div class="shell">
     <div class="section-head section-head--center" data-reveal="blur-up">
       <div>
-        <h2 class="h1">Four steps from scrolling to keys</h2>
+        <h2 class="h1" id="buying-process-title">Buying a flat, step by step</h2>
+        <p class="lead">From your first search to your final decision. Here is where to start and what comes next.</p>
       </div>
     </div>
 
@@ -249,29 +250,35 @@
     <ol class="steps" data-reveal-group="stagger">
       <li class="step">
         <span class="step__no">01</span>
-        <h3 class="h4">Tell us the brief</h3>
-        <p>Budget band, area, BHK, move-in date. One short form, no account needed.</p>
-        <svg class="i step__ic" aria-hidden="true"><use href="#i-clipboard-check"></use></svg>
+        <h3 class="h4">Find your flat</h3>
+        <p>Browse verified listings by area, budget and bedrooms. Note the flats you would like to see.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-building"></use></svg>
       </li>
       <li class="step">
         <span class="step__no">02</span>
-        <h3 class="h4">Get a shortlist</h3>
-        <p>We send three to five verified options on WhatsApp, with real photos and true carpet area.</p>
-        <svg class="i step__ic" aria-hidden="true"><use href="#i-layers"></use></svg>
+        <h3 class="h4">Talk to our team</h3>
+        <p>Share a listing or tell us what you need. Ask about availability and arrange a visit with the team.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-whatsapp"></use></svg>
       </li>
       <li class="step">
         <span class="step__no">03</span>
-        <h3 class="h4">Visit with us</h3>
-        <p>Same-day visits across Dhaka. Our coordinator handles building access and owner timing.</p>
-        <svg class="i step__ic" aria-hidden="true"><use href="#i-key"></use></svg>
+        <h3 class="h4">See it in person</h3>
+        <p>Walk through the flat, explore the building and ask about anything the photos cannot show.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-map-pin"></use></svg>
       </li>
       <li class="step">
         <span class="step__no">04</span>
-        <h3 class="h4">Move in, then design</h3>
-        <p>Hand the keys to a vetted interior studio and get a fixed-scope quote in 72 hours.</p>
-        <svg class="i step__ic" aria-hidden="true"><use href="#i-paint"></use></svg>
+        <h3 class="h4">Review, then decide</h3>
+        <p>Review the documents, full costs and handover details with the owner before agreeing to buy.</p>
+        <svg class="i step__ic" aria-hidden="true"><use href="#i-clipboard-check"></use></svg>
       </li>
     </ol>
+    <div class="section-followup">
+      <a class="btn btn-arrow" href="{{ url_for('public.flats') }}">
+        Find a flat <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+      </a>
+      <a class="link-arrow" href="#faq">Questions before you start? <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+    </div>
   </div>
 </section>
 
@@ -377,12 +384,12 @@
 <div class="wave-separator" aria-hidden="true">
   <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
 </div>
-<section class="section" id="faq">
+<section class="section" id="faq" aria-labelledby="faq-title">
   <div class="shell">
     <div class="section-head section-head--center" data-reveal="blur-up">
       <div>
-        <h2 class="h1">Questions we hear every day</h2>
-        <p class="lead">Short answers, real numbers. Anything else — WhatsApp us and a person replies.</p>
+        <h2 class="h1" id="faq-title">A few answers before you start</h2>
+        <p class="lead">Visits, fees, listing checks and interior work. Find the details here, or ask our team directly.</p>
       </div>
     </div>
 
@@ -418,11 +425,35 @@
         </div>
       </details>
       <details>
+        <summary>How do I arrange a flat visit?</summary>
+        <div class="faq__body">
+          <p>Send the listing link and your preferred day to our team on <a href="https://wa.me/8801712458794" target="_blank" rel="noopener">WhatsApp</a>, or use the <a href="#contact">contact form</a>. We will discuss availability and confirm the visit details with you. You do not need an account to enquire.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Does verification replace my own document review?</summary>
+        <div class="faq__body">
+          <p>No. Our checks help you choose which flats to explore. Before agreeing to buy, review the property documents and purchase terms independently, with professional help where needed. Ask the owner about any details you need clarified.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Can I request an interior design quote?</summary>
+        <div class="faq__body">
+          <p>Yes. Browse the <a href="{{ url_for('public.interior') }}">interior studios</a> or send us your room sizes, budget and the work you have in mind through the <a href="#contact">contact form</a>. A studio's starting price is a guide; ask for a quote covering your own project and scope.</p>
+        </div>
+      </details>
+      <details>
         <summary>Which areas do you cover?</summary>
         <div class="faq__body">
           <p>Dhaka, Chattogram and Sylhet. Same-day site visits run across Dhaka, and listings in the other cities go through the same verification before they publish.</p>
         </div>
       </details>
+    </div>
+    <div class="section-followup">
+      <p class="muted">Still have a question?</p>
+      <a class="link-arrow" href="https://wa.me/8801712458794" target="_blank" rel="noopener">
+        Ask us on WhatsApp <svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+      </a>
     </div>
   </div>
 </section>

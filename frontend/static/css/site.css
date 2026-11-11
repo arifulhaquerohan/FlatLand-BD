@@ -640,6 +640,17 @@
 .map-embed iframe { width: 100%; height: 100%; border: 0; }
 
 /* 6. PROCESS, QUOTES, CONTACT ---------------------------------------- */
+.section-followup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s3) var(--s5);
+  margin-top: var(--s6);
+  text-align: center;
+}
+.section-followup p { margin: 0; }
+.section-followup .link-arrow { min-height: 44px; }
 .steps { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); counter-reset: step; }
 .step {
   position: relative;
@@ -1348,6 +1359,10 @@
     line-height: 1.55;
     color: var(--muted);
   }
+}
+
+@media (max-width: 360px) {
+  #process .steps { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* =========================================================================

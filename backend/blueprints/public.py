@@ -11,7 +11,8 @@ from flask_mail import Message
 from ..models import db, User, Flat, InteriorService, FlatImage, InteriorImage, Lead, PageView
 from ..forms import LoginForm, ContactForm, RegisterForm
 from ..extensions import csrf, limiter, mail
-from ..utils import get_cached_value, extract_youtube_id, build_youtube_embed, build_youtube_watch, summarize_text, save_uploaded_image, parse_image_urls, coerce_float, coerce_int, collect_uploaded_images, delete_listing_media, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
+from ..utils import collect_listing_image_urls, cleanup_listing_media
+from ..utils import get_cached_value, extract_youtube_id, build_youtube_embed, build_youtube_watch, summarize_text, save_uploaded_image, parse_image_urls, coerce_float, coerce_int, collect_uploaded_images, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
 
 public_bp = Blueprint('public', __name__)
 
@@ -102,10 +103,13 @@ def collect():
     visitor hash is a daily-rotating digest so nobody is trackable across
     days. Bots and console traffic are ignored."""
     data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return ('', 204)
     path = str(data.get('p', ''))[:200]
     if not path.startswith('/') or '://' in path or path.startswith('//'):
         return ('', 204)
-    if path.startswith('/console-x7') or path.startswith('/collect'):
+    admin_path = '/' + current_app.config['ADMIN_PATH']
+    if path == admin_path or path.startswith(admin_path + '/') or path.startswith('/collect'):
         return ('', 204)
     ua = (request.user_agent.string or '')[:250]
     if not ua or re.search(r'bot|crawl|spider|slurp|preview|headless', ua, re.I):
@@ -116,8 +120,8 @@ def collect():
         from urllib.parse import urlparse
         try: ref_host = (urlparse(ref).netloc or '')[:120]
         except Exception: ref_host = ''
-    device = 'mobile' if re.search(r'Mobile|Android|iPhone', ua, re.I) else (
-        'tablet' if re.search(r'iPad|Tablet', ua, re.I) else 'desktop')
+    device = 'tablet' if re.search(r'iPad|Tablet', ua, re.I) else (
+        'mobile' if re.search(r'Mobile|Android|iPhone', ua, re.I) else 'desktop')
     salt = current_app.config.get('SECRET_KEY', '') + datetime.utcnow().strftime('%Y%m%d')
     vhash = hashlib.sha256((salt + (request.remote_addr or '') + ua).encode('utf-8', 'replace')).hexdigest()[:32]
     db.session.add(PageView(path=path, referrer_host=ref_host, device=device, visitor_hash=vhash))
@@ -354,11 +358,13 @@ def delete_own_listing(item_type, id):
         item = InteriorService.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     else:
         abort(404)
+    media_urls = collect_listing_image_urls(item)
     db.session.delete(item)
     db.session.commit()
     # Only touch storage after the row is really gone - a failed commit must
     # not leave a live listing pointing at permanently deleted photos.
-    delete_listing_media(item)
+    invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
+    cleanup_listing_media(media_urls)
     flash('Listing deleted.', 'success')
     return redirect(url_for('public.dashboard'))
 
@@ -376,6 +382,12 @@ def contact():
     budget = request.form.get('budget', '').strip()[:50]
     service_type = request.form.get('service_type', '').strip()[:100]
     timeline = request.form.get('timeline', '').strip()[:50]
+
+    if contact_info and not phone and not email:
+        if '@' in contact_info:
+            email = contact_info.lower()[:120]
+        else:
+            phone = contact_info
 
     # Keep only digits and a leading + so tel:/wa.me links work whatever the
     # visitor typed (+880 1712-345-678 -> +8801712345678).
@@ -515,19 +527,18 @@ def flats():
     if bhk and bhk != 'all':
         if bhk == '4plus': query = query.filter(Flat.bhk >= 4)
         else:
-            try:
-                if int(bhk): query = query.filter(Flat.bhk == int(bhk))
-            except ValueError: pass
+            bhk_value = coerce_int(bhk)
+            if bhk_value:
+                query = query.filter(Flat.bhk == bhk_value)
 
-    try: min_price_val = float(min_price) if min_price else None
-    except ValueError: min_price_val = None
+    min_price_val = coerce_float(min_price, None)
     if min_price_val is not None: query = query.filter(Flat.price >= min_price_val)
 
-    try: max_price_val = float(max_price) if max_price else None
-    except ValueError: max_price_val = None
+    max_price_val = coerce_float(max_price, None)
     if max_price_val is not None: query = query.filter(Flat.price <= max_price_val)
 
     total_matches = query.order_by(None).count()
+    page = min(page, max(1, (total_matches + per_page - 1) // per_page))
     sort_clause = sort_options[sort]
     if sort == 'newest': query = query.order_by(sort_clause)
     else: query = query.order_by(sort_clause, Flat.created_at.desc())
@@ -571,6 +582,7 @@ def interior():
         load_only(InteriorService.id, InteriorService.provider_name, InteriorService.service_type, InteriorService.description, InteriorService.starting_price, InteriorService.image_url, InteriorService.created_at)
     )
     total_services = base_query.order_by(None).count()
+    page = min(page, max(1, (total_services + per_page - 1) // per_page))
     query = base_query.order_by(InteriorService.created_at.desc())
     
     offset = (page - 1) * per_page
