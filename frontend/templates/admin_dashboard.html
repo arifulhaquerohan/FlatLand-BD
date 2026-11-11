@@ -71,7 +71,10 @@
     <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg> Awaiting review</p>
     <p class="kpi__value" data-count="{{ pending_assets }}">{{ pending_assets }}</p>
     <p class="kpi__foot muted">
-      {% if pending_assets %}<a href="{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}">Open the queue</a>{% else %}Queue is clear{% endif %}
+      {% if stats.pending_flats %}<a href="{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}">{{ stats.pending_flats }} {{ 'flat' if stats.pending_flats == 1 else 'flats' }}</a>{% endif %}
+      {% if stats.pending_flats and stats.pending_services %} · {% endif %}
+      {% if stats.pending_services %}<a href="{{ url_for('admin.admin_dashboard', tab='services', status='pending') }}">{{ stats.pending_services }} {{ 'studio' if stats.pending_services == 1 else 'studios' }}</a>{% endif %}
+      {% if not pending_assets %}Queue is clear{% endif %}
     </p>
   </article>
 

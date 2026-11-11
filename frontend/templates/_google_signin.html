@@ -1,0 +1,18 @@
+{% set google = google_button_context() %}
+{% if google %}
+<div class="authx__google" role="group" aria-label="Continue with Google">
+  <div id="g_id_onload" data-client_id="{{ google.client_id }}" data-callback="flatlandGoogleSignIn"
+       data-nonce="{{ google.nonce }}" data-auto_prompt="false" data-ux_mode="popup"></div>
+  <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="large"
+       data-text="continue_with" data-shape="rectangular" data-logo_alignment="center" data-locale="en"></div>
+  <p class="field__hint" id="google-signin-error" role="status" hidden>Google sign-in could not load. You can use the form below.</p>
+</div>
+<form id="google-signin-form" action="{{ url_for('google_auth.authenticate') }}" method="POST" hidden>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="credential" value="">
+  <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+</form>
+<div class="authx__divider"><span>or</span></div>
+<script src="{{ static_url('js/google-auth.js') }}"></script>
+<script src="https://accounts.google.com/gsi/client?hl=en" async defer onerror="document.getElementById('google-signin-error').hidden=false"></script>
+{% endif %}

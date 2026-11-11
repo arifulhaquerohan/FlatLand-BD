@@ -22,3 +22,6 @@ backports.zstd; python_version < "3.14"
 psycopg2-binary==2.9.9
 gunicorn==21.2.0
 # pymysql==1.1.1   # only if you use MySQL (see CPANEL_SETUP.md)
+
+# Google Identity Services ID-token verification (includes certificate transport)
+google-auth[requests]==2.47.0

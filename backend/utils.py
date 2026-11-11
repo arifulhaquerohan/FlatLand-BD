@@ -5,7 +5,7 @@ import json
 import math
 from datetime import datetime, timedelta
 from io import BytesIO
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 from functools import wraps
 from flask import request, redirect, url_for, abort, current_app
 from flask_login import current_user
@@ -340,6 +340,32 @@ def invalidate_cached_value(*keys):
 PUBLIC_CACHE_KEYS = ('public_stats', 'public_featured_flats_v1', 'public_featured_services_v1')
 ADMIN_CACHE_KEYS = ('admin_stats', 'admin_trend_v1')
 ALL_LISTING_CACHE_KEYS = PUBLIC_CACHE_KEYS + ADMIN_CACHE_KEYS + ('sitemap_xml',)
+
+def safe_redirect_target(value, fallback=''):
+    """Return a same-origin absolute path, or ``fallback`` when unsafe.
+
+    Validate decoded forms as well as the literal value. Otherwise a target
+    such as ``/%2fexample.com`` can be interpreted differently by a browser or
+    intermediary after the server has accepted it.
+    """
+    value = (value or '').strip()
+    if not value or any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return fallback
+
+    decoded = value
+    for _ in range(3):
+        expanded = unquote(decoded)
+        if expanded == decoded:
+            break
+        decoded = expanded
+
+    for candidate in (value, decoded):
+        parsed = urlparse(candidate)
+        if (not candidate.startswith('/') or candidate.startswith('//') or
+                parsed.scheme or parsed.netloc or '\\' in candidate or
+                any(ord(char) < 32 or ord(char) == 127 for char in candidate)):
+            return fallback
+    return value
 
 def safe_next_path():
     path = request.full_path if request.query_string else request.path

@@ -23,7 +23,7 @@
 <title>{% block title %}FlatLand BD — Flats & interior design in Bangladesh{% endblock %}</title>
 <meta name="description" content="{{ page_description }}">
 <link rel="canonical" href="{{ canonical_url }}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="{{ 'noindex, nofollow' if private_auth_page else 'index, follow' }}">
 <meta name="author" content="FlatLand BD">
 <meta name="format-detection" content="telephone=no">
 <meta property="og:site_name" content="FlatLand BD">
@@ -89,7 +89,7 @@
 </script>
 </head>
 
-<body class="has-dock{% if active_endpoint in ['login', 'register'] %} is-auth{% endif %}">
+<body class="has-dock{% if active_endpoint in ['login', 'register', 'forgot', 'reset'] %} is-auth{% endif %}">
 {% include "components/sprite.html" %}
 <a class="skip-link" href="#main">Skip to content</a>
 

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Finish Google sign-in | FlatLand BD{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ static_url('css/auth.css') }}">{% endblock %}
+{% block content %}
+<section class="authx">
+  <div class="authx__card">
+    <a class="authx__brand" href="{{ url_for('public.index') }}" aria-label="FlatLand BD home">
+      <img class="authx__brand-mark" src="{{ static_url('img/logo-icon.svg') }}" alt="" width="42" height="42">
+      <span class="authx__brand-name">FlatLand<span>BD</span></span>
+    </a>
+    <div class="authx__head">
+      <h1 class="authx__title">{{ 'Link your Google account' if existing else 'One last step' }}</h1>
+      <p class="authx__lead">{{ 'An account already uses this email. Enter its FlatLand BD password to link Google.' if existing else 'Choose a username and add your mobile number to finish creating your account.' }}</p>
+      <p class="authx__identity">{{ pending.name }}<br>{{ pending.email }}</p>
+    </div>
+    <form class="authx__form" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if existing %}
+      <div class="authx__field">
+        <label class="authx__label" for="link-password">Existing account password</label>
+        <input class="input" id="link-password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      {% else %}
+      <div class="authx__field">
+        <label class="authx__label" for="google-username">Username</label>
+        <input class="input" id="google-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[a-z0-9_]{3,20}" value="{{ entered.username }}" aria-describedby="google-username-hint">
+        <span class="field__hint" id="google-username-hint">3–20 lowercase letters, numbers or underscores.</span>
+      </div>
+      <div class="authx__field">
+        <label class="authx__label" for="google-phone">Mobile number</label>
+        <input class="input" id="google-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="24" placeholder="01712345678" value="{{ entered.phone }}" aria-describedby="google-phone-hint">
+        <span class="field__hint" id="google-phone-hint">Your Bangladeshi mobile number, starting 013–019.</span>
+      </div>
+      <label class="check check--block"><input type="checkbox" name="confirm" value="1" required><span>I confirm the details I publish are accurate and mine to list.</span></label>
+      {% endif %}
+      <button class="btn btn--lg btn--block authx__submit" type="submit">{{ 'Link Google and sign in' if existing else 'Create my account' }}</button>
+      <p class="authx__alt"><a href="{{ url_for('public.login') }}">Back to sign in</a></p>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -50,6 +50,8 @@
     </div>
     {% endif %}
 
+    {% include "_google_signin.html" %}
+
     <form class="authx__form" method="POST" action="{{ url_for('public.register') }}" data-veil>
       {% if form %}{{ form.hidden_tag() }}{% else %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
 

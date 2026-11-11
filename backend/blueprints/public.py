@@ -11,7 +11,7 @@ from flask_mail import Message
 from ..models import db, User, Flat, InteriorService, FlatImage, InteriorImage, Lead, PageView
 from ..forms import LoginForm, ContactForm, RegisterForm
 from ..extensions import csrf, limiter, mail
-from ..utils import collect_listing_image_urls, cleanup_listing_media
+from ..utils import collect_listing_image_urls, cleanup_listing_media, safe_redirect_target
 from ..utils import get_cached_value, extract_youtube_id, build_youtube_embed, build_youtube_watch, summarize_text, save_uploaded_image, parse_image_urls, coerce_float, coerce_int, collect_uploaded_images, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
 
 public_bp = Blueprint('public', __name__)
@@ -210,9 +210,9 @@ def login():
             # into the console), but only when it is a same-origin path. The
             # template also mirrors it into a hidden field because the form
             # action drops the query string.
-            next_page = (request.args.get('next') or request.form.get('next') or '').strip()
-            if next_page.startswith('/') and not next_page.startswith('//') \
-                    and '://' not in next_page and '..' not in next_page:
+            next_page = safe_redirect_target(
+                request.args.get('next') or request.form.get('next'))
+            if next_page:
                 return redirect(next_page)
             if user.is_admin():
                 return redirect(url_for('admin.admin_dashboard'))

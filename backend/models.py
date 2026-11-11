@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+import hashlib
 
 db = SQLAlchemy()
 
@@ -64,8 +65,31 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def get_id(self):
+        # Password changes revoke both session cookies and remembered logins.
+        fingerprint = hashlib.sha256(self.password_hash.encode()).hexdigest()[:32]
+        return f'{self.id}:{fingerprint}'
+
     def is_admin(self):
         return self.role == 'admin'
+
+class GoogleIdentity(db.Model):
+    """Google's immutable subject links an identity to one local account."""
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(255), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    user = db.relationship('User', backref=db.backref('google_identity', uselist=False,
+                                                   cascade='all, delete-orphan'))
+
+
+class PasswordReset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    password_fingerprint = db.Column(db.String(64), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    user = db.relationship('User', backref=db.backref('password_resets', cascade='all, delete-orphan'))
+
 
 class Flat(db.Model):
     __table_args__ = (

@@ -58,6 +58,7 @@ if len(secret_key) < 32 or secret_key.lower() in {'change-me', 'replace-me'}:
     )
     
 app.config['SECRET_KEY'] = secret_key
+app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', '0') == '1'
@@ -96,10 +97,15 @@ app.config['CLOUDINARY_CLOUD_NAME'] = os.getenv('CLOUDINARY_CLOUD_NAME')
 
 # Flask Mail config
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['PASSWORD_RESET_BASE_URL'] = os.getenv('PASSWORD_RESET_BASE_URL', '').strip().rstrip('/')
+app.config['MAIL_TIMEOUT'] = 10
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', '0') == '1'
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() in ['true', '1']
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+# Google displays App Passwords in groups; normalize optional spaces so both
+# copied formats work without storing or logging the credential.
+app.config['MAIL_PASSWORD'] = ''.join((os.getenv('MAIL_PASSWORD') or '').split())
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 app.config['ADMIN_EMAIL'] = os.getenv('ADMIN_EMAIL')
 app.config['ADMIN_PATH'] = os.getenv('ADMIN_PATH', 'admin').strip().strip('/') or 'admin'
@@ -123,7 +129,13 @@ login_manager.session_protection = "strong"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    import hmac
+    try:
+        raw_id, fingerprint = user_id.split(':', 1)
+        user = db.session.get(User, int(raw_id))
+        return user if user and hmac.compare_digest(user.get_id(), user_id) else None
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 def static_url(filename):
     from flask import url_for
@@ -199,11 +211,11 @@ def inject_meta_defaults():
 def add_security_headers(response):
     csp_parts = [
         "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'self'", "form-action 'self'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client",
         "font-src 'self' data: https://fonts.gstatic.com", "img-src 'self' data: blob: https:",
-        "frame-src 'self' https://www.google.com https://maps.google.com https://maps.gstatic.com https://www.youtube.com https://www.youtube-nocookie.com",
-        "connect-src 'self'",
+        "frame-src 'self' https://accounts.google.com/gsi/ https://www.google.com https://maps.google.com https://maps.gstatic.com https://www.youtube.com https://www.youtube-nocookie.com",
+        "connect-src 'self' https://accounts.google.com/gsi/",
     ]
     response.headers.setdefault('Content-Security-Policy', '; '.join(csp_parts))
     response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -226,7 +238,7 @@ def add_security_headers(response):
 
     PUBLIC_CACHE_ENDPOINTS = {'public.index', 'public.flats', 'public.interior', 'public.flat_detail', 'public.interior_detail', 'public.robots', 'public.sitemap'}
     if path.startswith('/static/'): response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
-    elif path.startswith(f"/{app.config['ADMIN_PATH']}") or current_user_auth: response.headers['Cache-Control'] = 'no-store'
+    elif path.startswith(('/auth/', '/login', '/register', '/forgot-password', '/reset-password')) or path.startswith(f"/{app.config['ADMIN_PATH']}") or current_user_auth: response.headers['Cache-Control'] = 'no-store'
     
     # Cache only real successes: a pending/deleted listing answers 404 here,
     # and caching that would hide the listing for the cache TTL after approval.
@@ -272,6 +284,10 @@ def csrf_error(e):
     return redirect(flask_request.referrer or '/'), 302
 
 # Register Blueprints
+from .blueprints.password_reset import password_reset_bp
+app.register_blueprint(password_reset_bp)
+from .blueprints.google_auth import google_bp
+app.register_blueprint(google_bp)
 app.register_blueprint(public_bp)
 app.register_blueprint(admin_bp, url_prefix=f"/{app.config['ADMIN_PATH']}")
 

@@ -131,3 +131,22 @@ See `.env.example` for the full list. Key ones:
 ## 📜 License
 
 MIT — see [LICENSE](LICENSE).
+
+## Google sign-in
+
+1. In [Google Auth Platform](https://console.cloud.google.com/auth/clients), configure branding, audience and an OAuth client of type **Web application**.
+2. Add authorized JavaScript origins: `http://localhost:5001`, `http://127.0.0.1:5001`, and your production HTTPS origin. Origins contain no path. Use localhost locally rather than a LAN IP.
+3. Put the public client ID in `.env`: `GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com`, then restart Flask. No client secret or redirect URI is needed for this popup ID-token flow.
+4. If Google is in Testing mode, add your test Google accounts in Audience before testing.
+
+The official Continue with Google button appears on Sign In and Create Account only when configured. The backend validates Google's signed token, audience, expiry, verified email, and a session nonce; POSTs require Flask CSRF. New members supply a username and mobile number. Matching emails require the existing account password before linking. Duplicate phone numbers never link accounts automatically. Google members receive no user-facing password. A new `google_identity` table is created at startup without changing existing user rows.
+
+Check both account pages on localhost, complete a new registration, sign out and sign in again with Google, and test linking an existing password account. Google sign-in requires network access to Google. If it fails, existing password sign-in remains available.
+
+## Password recovery
+
+Sign In includes **Forgot password?**. Recovery uses the account's email address. Accounts without email should contact support; Google users can continue signing in with Google.
+
+Configure your SMTP provider with `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER` and `MAIL_USE_TLS`. For port 465 use `MAIL_USE_SSL=1` and `MAIL_USE_TLS=0`. Set `PASSWORD_RESET_BASE_URL=http://localhost:5001` locally and your actual `https://` website origin in production, with no path. Restart after changing environment variables. Until SMTP and a trusted origin are configured, the recovery page explains that email recovery is unavailable.
+
+Reset requests return the same confirmation for recognized and unknown emails. Email delivery runs in a background thread; check server logs for delivery errors. Only token hashes are stored. Links expire after 30 minutes, and resetting revokes every outstanding link and existing login for that member. Existing members will need to sign in once after deploying the new session format. Confirm delivery with your mail provider before enabling production recovery; background threads are best-effort if a worker exits.
