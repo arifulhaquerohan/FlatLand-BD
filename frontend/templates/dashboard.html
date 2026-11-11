@@ -2,29 +2,45 @@
 
 {% block title %}My dashboard | FlatLand BD{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/auth.css') }}">
+{% endblock %}
+
 {% block content %}
 {% set total_items = (flats | length) + (services | length) %}
 {% set approved_items = (flats | selectattr('status', 'equalto', 'approved') | list | length) + (services | selectattr('status', 'equalto', 'approved') | list | length) %}
 {% set pending_items = (flats | selectattr('status', 'equalto', 'pending') | list | length) + (services | selectattr('status', 'equalto', 'pending') | list | length) %}
 
+<!-- ================================================ ACCOUNT BAND -->
+<section class="authx-band">
+  <div class="authx__bg" aria-hidden="true">
+    <div class="authx__orb authx__orb--a"></div>
+    <div class="authx__orb authx__orb--b"></div>
+    <div class="authx__grid"></div>
+  </div>
+  <div class="shell authx-band__inner">
+    <div class="authx-band__copy">
+      <p class="authx__kicker"><svg class="i" aria-hidden="true"><use href="#i-user-circle"></use></svg> Your account</p>
+      <h1 class="authx__title">Hello, {{ (current_user.full_name or 'there').split(' ')[0] }}</h1>
+      <p class="authx__lead">Track what you have submitted, what is live, and what still needs review.</p>
+      <div class="authx-band__facts">
+        <span><svg class="i" aria-hidden="true"><use href="#i-whatsapp"></use></svg> WhatsApp replies in ~15 min</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-tag"></use></svg> Zero listing fees</span>
+      </div>
+    </div>
+    <div class="authx-band__actions">
+      <a class="btn btn-arrow" href="{{ url_for('public.post_listing') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg> New listing
+      </a>
+      <a class="btn btn--ghost" href="{{ url_for('public.flats') }}">View live site</a>
+    </div>
+  </div>
+</section>
+
 <section class="section section--flush">
   <div class="shell">
 
-    <div class="dash-head" data-reveal>
-      <div class="stack stack--sm">
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-grid"></use></svg> Dashboard</p>
-        <h1 class="display display--sm">Hello, {{ (current_user.full_name or 'there').split(' ')[0] }}</h1>
-        <p class="lead">Track what you have submitted, what is live, and what still needs review.</p>
-      </div>
-      <div class="row">
-        <a class="btn btn-arrow" href="{{ url_for('public.post_listing') }}">
-          <svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg> New listing
-        </a>
-        <a class="btn btn--ghost" href="{{ url_for('public.flats') }}">View live site</a>
-      </div>
-    </div>
-
-    <div class="dash-cards" data-reveal-group>
+    <div class="dash-cards" style="margin-top:var(--s6)" data-reveal-group>
       <div class="metric metric--card">
         <span class="metric__ic"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg></span>
         <p class="metric__value"><span data-count="{{ total_items }}">{{ total_items }}</span></p>
@@ -51,7 +67,6 @@
       <div class="stack">
         <div class="section-head section-head--tight" data-reveal>
           <div>
-            <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> My flats</p>
             <h2 class="h2">Flat listings</h2>
           </div>
         </div>
@@ -87,10 +102,12 @@
               {% else %}
               <span class="badge badge--amber">Awaiting review</span>
               {% endif %}
-              <form method="POST" action="{{ url_for('public.delete_own_listing', item_type='flat', id=flat.id) }}"
-                    onsubmit="return confirm('Delete this flat and its photos permanently? This cannot be undone.');">
+              <form method="POST" action="{{ url_for('public.delete_own_listing', item_type='flat', id=flat.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn--sm btn--ghost btn--danger" type="submit" aria-label="Delete" title="Delete">
+                <button class="btn btn--sm btn--ghost btn--danger" type="submit" aria-label="Delete" title="Delete"
+                        data-confirm-title="Delete this flat?"
+                        data-confirm="This removes the listing and its photos permanently. This cannot be undone."
+                        data-confirm-ok-label="Delete flat">
                   <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg> Delete
                 </button>
               </form>
@@ -111,7 +128,6 @@
       <div class="stack">
         <div class="section-head section-head--tight" data-reveal>
           <div>
-            <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> My studios</p>
             <h2 class="h2">Interior services</h2>
           </div>
         </div>
@@ -145,10 +161,12 @@
               {% else %}
               <span class="badge badge--amber">Awaiting review</span>
               {% endif %}
-              <form method="POST" action="{{ url_for('public.delete_own_listing', item_type='interior', id=service.id) }}"
-                    onsubmit="return confirm('Delete this studio profile and its photos permanently? This cannot be undone.');">
+              <form method="POST" action="{{ url_for('public.delete_own_listing', item_type='interior', id=service.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn--sm btn--ghost btn--danger" type="submit" aria-label="Delete" title="Delete">
+                <button class="btn btn--sm btn--ghost btn--danger" type="submit" aria-label="Delete" title="Delete"
+                        data-confirm-title="Delete this studio profile?"
+                        data-confirm="This removes the profile and its photos permanently. This cannot be undone."
+                        data-confirm-ok-label="Delete profile">
                   <svg class="i" aria-hidden="true"><use href="#i-trash"></use></svg> Delete
                 </button>
               </form>

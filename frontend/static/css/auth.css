@@ -107,7 +107,7 @@
 .authx__alt { font-size: .9rem; color: var(--muted); text-align: center; margin: 0; }
 .authx__alt a { color: var(--clay-strong); font-weight: 600; text-decoration: none; }
 .authx__alt a:hover { text-decoration: underline; }
-.authx__fine { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: .76rem; color: var(--faint); text-align: center; margin: 0; }
+.authx__fine { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: .76rem; color: var(--muted); text-align: center; margin: 0; }
 .authx__fine .i { width: 14px; height: 14px; flex: none; }
 
 /* Staggered entrance — fill-mode backwards means content stays visible
@@ -177,7 +177,7 @@ body.is-auth .fab-stack { display: none; }
 /* ---- @username ------------------------------------------------------- */
 .uname { position: relative; }
 .uname__at {
-  position: absolute; left: 14px; font-weight: 700; color: var(--faint);
+  position: absolute; left: 14px; font-weight: 700; color: var(--muted);
   pointer-events: none; transition: color var(--t-fast) var(--ease);
 }
 .uname:focus-within .uname__at { color: var(--clay); }
@@ -239,7 +239,7 @@ body.is-auth .fab-stack { display: none; }
 }
 .phonebd__count {
   position: absolute; right: 13px; font-size: .72rem; font-weight: 700;
-  color: var(--faint); font-variant-numeric: tabular-nums;
+  color: var(--muted); font-variant-numeric: tabular-nums;
   transition: color var(--t-fast) var(--ease);
 }
 .phonebd.is-ok  .phonebd__input { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(47, 107, 87, .13); }
@@ -260,4 +260,64 @@ body.is-auth .fab-stack { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .uname__spin, .uname__idea { animation: none; }
+}
+
+/* Account page band ------------------------------------------------------
+   The sign-in screen's atmosphere (orbs, blueprint grid, floating chips)
+   carried into the member area as a page header. Reuses .authx__bg,
+   .authx__orb, .authx__grid and .authx__chip as-is, resized for a band. */
+.authx-band {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(44px, 6vw, 78px) 0 clamp(50px, 6.5vw, 86px);
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(1100px 560px at 12% -8%, rgba(213, 123, 76, .10), transparent 60%),
+    radial-gradient(900px 640px at 108% 12%, rgba(47, 107, 87, .08), transparent 55%),
+    var(--canvas);
+}
+.authx-band .authx__orb--a { width: 480px; height: 480px; left: -150px; top: -250px; }
+.authx-band .authx__orb--b { width: 420px; height: 420px; right: -140px; top: -190px; }
+.authx-band .authx__orb--c { display: none; }
+.authx-band .authx__grid {
+  -webkit-mask-image: radial-gradient(ellipse at 30% 24%, #000, transparent 80%);
+  mask-image: radial-gradient(ellipse at 30% 24%, #000, transparent 80%);
+}
+/* The full-screen auth page's floating chips need empty margins a content-wide
+   band never has, so the band shows its two commitments as an inline row. */
+.authx-band__facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--s2); }
+.authx-band__facts span {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 13px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  font-size: .8rem; font-weight: 600; color: var(--ink-2);
+}
+.authx-band__facts .i { width: 15px; height: 15px; color: var(--clay-strong); flex: none; }
+.authx-band__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5);
+}
+.authx-band__copy { display: grid; gap: var(--s2); min-width: 0; }
+.authx-band__copy .authx__title { font-size: clamp(1.9rem, 3.8vw, 2.7rem); }
+.authx-band__copy .authx__lead { font-size: 1rem; max-width: 52ch; }
+.authx-band__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.authx-band__copy > * { animation: authx-rise .6s var(--ease) backwards; }
+.authx-band__copy > *:nth-child(1) { animation-delay: .04s; }
+.authx-band__copy > *:nth-child(2) { animation-delay: .1s; }
+.authx-band__copy > *:nth-child(3) { animation-delay: .16s; }
+.authx-band__actions .btn { animation: authx-rise .6s var(--ease) .22s backwards; }
+@media (max-width: 640px) {
+  .authx-band__inner { flex-direction: column; align-items: flex-start; gap: var(--s4); }
+  .authx-band { padding: 36px 0 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .authx-band__copy > *, .authx-band__actions .btn { animation: none; }
 }

@@ -14,3 +14,14 @@ static/uploads/
 frontend/static/uploads/
 backups/
 CLOUDINARY.md
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+
+# Local databases, agent tooling, and generated review artifacts
+instance/
+.agents/
+.claude/
+.codex/
+.impeccable/
+.taste-skill/
+/distill-*.png

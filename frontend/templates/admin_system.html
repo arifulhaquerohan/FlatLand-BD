@@ -21,16 +21,13 @@
 
 <section class="health-hero health-hero--{{ 'fail' if summary.fail else 'warn' if summary.warn else 'ok' }}">
   <div class="health-hero__score">
-    <div class="ring" data-ring="{{ summary.percent }}" role="img"
+    <div class="ring {{ 'ring--sage' if not summary.fail and not summary.warn else 'ring--amber' if summary.warn and not summary.fail else '' }}"
+         style="--p: {{ summary.percent }}" role="img"
          aria-label="{{ summary.percent }}% of checks passing">
       <span class="ring__value">{{ summary.percent }}<small>%</small></span>
     </div>
   </div>
   <div class="health-hero__text">
-    <p class="kicker">
-      <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg>
-      {{ 'Action needed' if summary.fail else 'Almost perfect' if summary.warn else 'All clear' }}
-    </p>
     <h2 class="h2">
       {{ summary.ok }} passing · {{ summary.warn }} warning{{ '' if summary.warn == 1 else 's' }} · {{ summary.fail }} failing
     </h2>
@@ -43,8 +40,54 @@
         Configuration is complete: security headers, encryption, storage and mail are all set.
       {% endif %}
     </p>
-    <pre class="test-out" id="sys-test-out" aria-live="polite">Cloudinary ping result appears here.</pre>
+    <pre class="note test-out" id="sys-test-out" aria-live="polite" hidden>Cloudinary ping result appears here.</pre>
   </div>
+</section>
+
+<section class="panel">
+  <header class="panel__head">
+    <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-users"></use></svg> Visitors</h2>
+    <span class="body-sm muted">Anonymous page-view beacon · last 14 days</span>
+  </header>
+
+  <div class="kpi-band">
+    <article class="kpi-cell">
+      <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-activity"></use></svg> Views today</p>
+      <p class="kpi__value">{{ visitors.today }}</p>
+      <p class="kpi__foot muted">{{ visitors.uniques_today }} uniques today</p>
+    </article>
+    <article class="kpi-cell">
+      <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-trending-up"></use></svg> Views · 7 days</p>
+      <p class="kpi__value">{{ visitors.views_7d }}</p>
+      <p class="kpi__foot muted">{{ visitors.uniques_7d }} unique visitors</p>
+    </article>
+    <article class="kpi-cell">
+      <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-user"></use></svg> Devices · 7 days</p>
+      <p class="kpi__value">{{ visitors.devices_7d.mobile }}</p>
+      <p class="kpi__foot muted">mobile · {{ visitors.devices_7d.tablet }} tablet · {{ visitors.devices_7d.desktop }} desktop</p>
+    </article>
+    <article class="kpi-cell">
+      <svg class="spark" data-spark="{{ visitors.series | tojson }}" role="img"
+           aria-label="Page views per day, last 14 days"></svg>
+      <p class="kpi__foot muted">{{ visitors.labels[0] }} → {{ visitors.labels[-1] }}</p>
+    </article>
+  </div>
+
+  {% if visitors.top_paths %}
+  <ul class="checklist">
+    {% for path, n in visitors.top_paths %}
+    <li class="checklist__row checklist__row--ok">
+      <span class="checklist__ic"><svg class="i" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg></span>
+      <div class="checklist__body">
+        <p class="checklist__label">{{ path }}</p>
+      </div>
+      <span class="pill-status pill-status--live">{{ n }} view{{ '' if n == 1 else 's' }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted body-sm">No visits recorded yet — the beacon starts counting the moment visitors arrive.</p>
+  {% endif %}
 </section>
 
 {% for group in check_groups %}

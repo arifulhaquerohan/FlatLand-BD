@@ -12,6 +12,12 @@
   var reduceMotion = window.matchMedia
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
+  // Hover effects (glow tracking, shine, shimmer) only make sense where a
+  // real cursor exists; on touch they are dead weight at best, scroll jank
+  // at worst.
+  var finePointer = window.matchMedia
+    ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    : true;
 
   function $(sel, ctx) { return (ctx || doc).querySelector(sel); }
   function $$(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
@@ -25,13 +31,21 @@
     var canvas = $(".particle-canvas");
     if (!canvas || reduceMotion) return;
 
+    // Touch hardware runs this on the weakest GPU of the day, and the cursor
+    // repel can never fire there: fewer particles, slower drift, and none of
+    // the O(n²) connection-line drawing.
+    var coarse = window.matchMedia
+      ? window.matchMedia("(pointer: coarse)").matches
+      : false;
+    var COUNT = coarse ? 20 : 48;
+    var SPEED = coarse ? 0.18 : 0.35;
+
     var ctx;
     var c = doc.createElement("canvas");
     c.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
     canvas.appendChild(c);
     ctx = c.getContext("2d");
 
-    var COUNT = 48;
     var particles = [];
     var w, h;
     var mouseX = -1000, mouseY = -1000;
@@ -46,8 +60,8 @@
       return {
         x: Math.random() * w,
         y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
+        vx: (Math.random() - 0.5) * SPEED,
+        vy: (Math.random() - 0.5) * SPEED,
         r: Math.random() * 2 + 0.6,
         opacity: Math.random() * 0.3 + 0.1
       };
@@ -56,7 +70,24 @@
     resize();
     for (var i = 0; i < COUNT; i++) particles.push(createParticle());
 
-    function draw() {
+    // The particle + connection loop is the heaviest animation on the page.
+    // Stop it entirely while the hero is off-screen or the tab is hidden,
+    // instead of burning 60 rAF wakeups per second forever.
+    var running = false;
+    var intersecting = true;
+
+    function frame() {
+      if (!running) return;
+      drawStep();
+      raf(frame);
+    }
+
+    function setRunning(next) {
+      if (next && !running) { running = true; raf(frame); }
+      else if (!next) { running = false; }
+    }
+
+    function drawStep() {
       ctx.clearRect(0, 0, w, h);
 
       for (var i = 0; i < particles.length; i++) {
@@ -90,28 +121,43 @@
         ctx.fillStyle = "rgba(194, 98, 47, " + p.opacity + ")";
         ctx.fill();
 
-        // Draw connections
-        for (var j = i + 1; j < particles.length; j++) {
-          var q = particles[j];
-          var ddx = p.x - q.x;
-          var ddy = p.y - q.y;
-          var d2 = ddx * ddx + ddy * ddy;
-          if (d2 < 18000) {
-            var alpha = (1 - d2 / 18000) * 0.12;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(q.x, q.y);
-            ctx.strokeStyle = "rgba(194, 98, 47, " + alpha + ")";
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
+        // Draw connections (fine pointers only — the pairing loop is the
+        // most expensive part of this canvas and reads as noise on phones).
+        if (!coarse) {
+          for (var j = i + 1; j < particles.length; j++) {
+            var q = particles[j];
+            var ddx = p.x - q.x;
+            var ddy = p.y - q.y;
+            var d2 = ddx * ddx + ddy * ddy;
+            if (d2 < 18000) {
+              var alpha = (1 - d2 / 18000) * 0.12;
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(q.x, q.y);
+              ctx.strokeStyle = "rgba(194, 98, 47, " + alpha + ")";
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            }
           }
         }
       }
-
-      raf(draw);
     }
 
-    raf(draw);
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        intersecting = entries[0].isIntersecting;
+        setRunning(intersecting);
+      }, { threshold: 0 });
+      io.observe(canvas);
+    } else {
+      setRunning(true);
+    }
+
+    on(doc, "visibilitychange", function () {
+      if (doc.hidden) setRunning(false);
+      else setRunning(intersecting);
+    });
+
     on(window, "resize", resize, { passive: true });
 
     on(canvas, "mousemove", function (e) {
@@ -174,7 +220,7 @@
      3. CARD GLOW TRACKING
      =========================================================== */
   function initCardGlow() {
-    if (reduceMotion) return;
+    if (reduceMotion || !finePointer) return;
     $$(".listing").forEach(function (card) {
       card.classList.add("has-glow");
       on(card, "pointermove", function (e) {
@@ -209,27 +255,6 @@
     });
   }
 
-  /* ===========================================================
-     5. ENHANCED SCROLL PROGRESS
-     =========================================================== */
-  function initScrollProgress() {
-    var bar = $(".scroll-progress__bar");
-    if (!bar) return;
-
-    var ticking = false;
-    function paint() {
-      var scrollTop = window.pageYOffset || root.scrollTop || 0;
-      var docHeight = doc.body.scrollHeight - window.innerHeight;
-      var pct = docHeight > 0 ? Math.min(1, scrollTop / docHeight) : 0;
-      bar.style.transform = "scaleX(" + pct + ")";
-      ticking = false;
-    }
-
-    on(window, "scroll", function () {
-      if (!ticking) { ticking = true; raf(paint); }
-    }, { passive: true });
-    paint();
-  }
 
   /* ===========================================================
      6. REVEAL GROUP STAGGER
@@ -265,6 +290,14 @@
     var dotsWrap = $(".testimonial-dots");
     if (!dotsWrap || !cards.length) return;
 
+    function scrollToCard(index) {
+      // Scroll only the row; scrollIntoView also moves the whole page.
+      track.scrollTo({
+        left: cards[index].offsetLeft - cards[0].offsetLeft,
+        behavior: reduceMotion ? "auto" : "smooth"
+      });
+    }
+
     // Create dots
     cards.forEach(function (_, i) {
       var dot = doc.createElement("button");
@@ -274,7 +307,7 @@
       dotsWrap.appendChild(dot);
 
       on(dot, "click", function () {
-        cards[i].scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest", inline: "start" });
+        scrollToCard(i);
       });
     });
 
@@ -292,16 +325,59 @@
       cards.forEach(function (c) { io.observe(c); });
     }
 
-    // Auto-scroll
+    // Auto-scroll: pauses on hover/keyboard focus, resumes after; direct
+    // interaction (drag, wheel) stops it for good. The pause button is the
+    // explicit control — looping content must be stoppable on purpose.
     if (!reduceMotion) {
       var autoIdx = 0;
-      var autoInterval = window.setInterval(function () {
-        autoIdx = (autoIdx + 1) % cards.length;
-        cards[autoIdx].scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
-      }, 6000);
+      var autoTimer = null;
+      var userTookOver = false;
+      var pausedByUser = false;
+      var pauseBtn = doc.createElement("button");
+      pauseBtn.className = "testimonial-pause";
+      pauseBtn.setAttribute("type", "button");
+      pauseBtn.setAttribute("aria-pressed", "false");
+      pauseBtn.setAttribute("aria-label", "Pause automatic slide advance");
+      pauseBtn.innerHTML =
+        '<svg class="i i-pause" aria-hidden="true"><use href="#i-pause"></use></svg>' +
+        '<svg class="i i-play" aria-hidden="true"><use href="#i-play"></use></svg>';
+      dotsWrap.appendChild(pauseBtn);
 
-      on(track, "pointerdown", function () { window.clearInterval(autoInterval); });
-      on(track, "wheel", function () { window.clearInterval(autoInterval); }, { passive: true });
+      function syncPauseBtn() {
+        var off = userTookOver || pausedByUser;
+        pauseBtn.setAttribute("aria-pressed", String(off));
+        pauseBtn.setAttribute("aria-label", off ? "Play automatic slide advance" : "Pause automatic slide advance");
+      }
+      function startAuto() {
+        if (autoTimer || userTookOver || pausedByUser) return;
+        autoTimer = window.setInterval(function () {
+          autoIdx = (autoIdx + 1) % cards.length;
+          scrollToCard(autoIdx);
+        }, 6000);
+      }
+      function stopAuto() {
+        if (autoTimer) { window.clearInterval(autoTimer); autoTimer = null; }
+      }
+
+      on(pauseBtn, "click", function () {
+        pausedByUser = !pausedByUser;
+        if (pausedByUser) { stopAuto(); }
+        else { userTookOver = false; startAuto(); }
+        syncPauseBtn();
+      });
+
+      startAuto();
+      syncPauseBtn();
+      on(track, "pointerdown", function () { userTookOver = true; stopAuto(); syncPauseBtn(); });
+      on(track, "wheel", function () { userTookOver = true; stopAuto(); syncPauseBtn(); }, { passive: true });
+      on(track, "pointerenter", stopAuto);
+      on(track, "pointerleave", startAuto);
+      if (dotsWrap) {
+        on(dotsWrap, "focusin", stopAuto);
+        on(dotsWrap, "focusout", startAuto);
+        on(dotsWrap, "pointerenter", stopAuto);
+        on(dotsWrap, "pointerleave", startAuto);
+      }
     }
   }
 
@@ -354,7 +430,7 @@
      11. ENHANCED BUTTON SHINE
      =========================================================== */
   function initButtonShine() {
-    if (reduceMotion) return;
+    if (reduceMotion || !finePointer) return;
     $$(".btn--lg, .btn-arrow").forEach(function (btn) {
       btn.classList.add("has-shine");
     });
@@ -374,9 +450,41 @@
      13. CTA SHIMMER
      =========================================================== */
   function initCtaShimmer() {
-    if (reduceMotion) return;
+    if (reduceMotion || !finePointer) return;
     $$(".cta-band").forEach(function (band) {
       band.classList.add("has-shimmer");
+    });
+  }
+
+  /* ===========================================================
+     16. PAUSE INFINITE LOOPS OFF-SCREEN
+     =========================================================== */
+  function initLoopPause() {
+    if (reduceMotion || !("IntersectionObserver" in window)) return;
+    var loops = $$(".text-shimmer, .cta-band.has-shimmer");
+    if (!loops.length) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        entry.target.classList.toggle("is-paused", !entry.isIntersecting);
+      });
+    }, { threshold: 0 });
+    loops.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ===========================================================
+     17. CARD IMAGE FADE-IN ON LOAD
+     =========================================================== */
+  function initImageFade() {
+    if (reduceMotion) return;
+    $$(".listing__media img").forEach(function (img) {
+      // Already-decoded images (cached, above the fold) render as normal —
+      // only lazy ones that are still in flight get the fade bridge.
+      if (img.complete || img.dataset.fadeReady === "1") return;
+      img.dataset.fadeReady = "1";
+      img.classList.add("img-lazy-fade");
+      var settle = function () { img.classList.add("is-loaded"); };
+      on(img, "load", settle);
+      on(img, "error", settle); // broken images must not stay invisible
     });
   }
 
@@ -384,7 +492,7 @@
      14. SMOOTH TEXT REVEAL (character-by-character for hero)
      =========================================================== */
   function initTextReveal() {
-    if (reduceMotion) return;
+    if (reduceMotion || !finePointer) return;
     var el = $(".hero__title .accent");
     if (!el) return;
 
@@ -415,7 +523,6 @@
     initCursor();
     initCardGlow();
     initRipple();
-    initScrollProgress();
     initStaggerGroups();
     initTestimonialCarousel();
     initSpringCounters();
@@ -425,6 +532,8 @@
     initFabPulse();
     initCtaShimmer();
     initTextReveal();
+    initLoopPause();
+    initImageFade();
     initMetricGlow();
   });
 })();

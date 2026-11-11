@@ -1,0 +1,137 @@
+/* ==========================================================================
+   FlatLand BD — touch layer. Loaded LAST on every page (public + console).
+   Only capability media queries live here: (pointer: coarse) / (hover: none).
+   Desktop with a mouse is untouched — every rule below is a no-op there.
+   ========================================================================== */
+
+/* 1. iOS input zoom ------------------------------------------------------
+   Safari zooms the page when an input under 16px takes focus and never
+   zooms back out. 16px is the floor, not a design change. */
+@media (pointer: coarse) {
+  .input, .select, .textarea,
+  .input--sm, .select--sm {
+    font-size: 16px;
+  }
+}
+
+/* 2. Sticky hover --------------------------------------------------------
+   Touch has no hover: the first tap applies :hover and it sticks until the
+   next tap elsewhere. Lifts, zooms and underlines become stuck decoration.
+   Neutralize the transform/shadow layer on tap-targets; color-only hovers
+   are left alone (harmless if they stick). */
+@media (hover: none), (pointer: coarse) {
+  .btn:hover,
+  .listing:hover,
+  .chip:hover,
+  .quick:hover,
+  .dash-item:hover,
+  .icon-btn:hover,
+  .fab:hover,
+  .asset:hover,
+  .gallery__thumb:hover,
+  .metric--card:hover,
+  .card--lift:hover,
+  .hover-lift:hover,
+  .dock__item:hover,
+  .wizard__pip:hover,
+  .navlink:hover,
+  .rail__link:hover,
+  .cell-title:hover,
+  .feed__title:hover,
+  .faq summary:hover {
+    transform: none;
+  }
+
+  /* these hovers add a shadow on a shadow-less base — drop it too */
+  .btn:hover,
+  .quick:hover,
+  .asset:hover,
+  .card--lift:hover,
+  .hover-lift:hover {
+    box-shadow: none;
+  }
+
+  .listing:hover .listing__media img,
+  .asset:hover .asset--view img {
+    transform: none;
+  }
+
+  .btn-arrow:hover .i,
+  .link-arrow:hover .i {
+    transform: none;
+  }
+
+  .dock__item.is-active .i,
+  .dock__item:hover .i {
+    transform: none;
+  }
+
+  /* press feedback instead of hover: native apps respond on touch-down */
+  .listing:active,
+  .quick:active,
+  .asset:active {
+    transform: scale(.985);
+    transition: transform .1s ease-out;
+  }
+
+  .chip:active,
+  .gallery__thumb:active,
+  .icon-btn:active {
+    transform: scale(.94);
+    transition: transform .1s ease-out;
+  }
+
+  .btn:active {
+    transform: scale(.97);
+    transition: transform .1s ease-out;
+  }
+}
+
+/* 3. Controls are not selectable text ------------------------------------
+   Long-press on a dock item, chip or thumb must not pop the iOS
+   copy/share callout or select its label. Content text stays selectable. */
+button,
+[role="button"],
+.chip,
+.dock__item,
+.wizard__pip,
+.gallery__thumb,
+.testimonial-dot,
+.navlink,
+.rail__link,
+.summary,
+details summary,
+label.dropzone {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 4. Horizontal scrollers own the horizontal axis -------------------------
+   Tells iOS which gesture wins before it guesses: vertical page pan stays
+   with the browser, horizontal goes to the scroller — no diagonal jitter. */
+.testimonials-track,
+.gallery__thumbs,
+.dtable-scroll {
+  touch-action: pan-y;
+}
+
+/* 5. Keyboard vs fixed UI -------------------------------------------------
+   When the software keyboard opens, iOS keeps .dock and .fab-stack pinned
+   to the visual viewport bottom — they cover the field being typed in.
+   app.js toggles body.kb-open from the visualViewport API. */
+.dock,
+.fab-stack {
+  transition: transform var(--t-mid) var(--ease), opacity var(--t-mid) var(--ease);
+}
+body.kb-open .dock,
+body.kb-open .fab-stack {
+  transform: translateY(130%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 6. Console app shell tracks the mobile URL bar ------------------------- */
+@media (max-width: 1080px) {
+  .console__shell { min-height: 100vh; min-height: 100dvh; }
+}

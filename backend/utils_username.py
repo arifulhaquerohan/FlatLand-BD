@@ -67,27 +67,38 @@ def is_username_taken(cleaned):
 
 
 def suggest_usernames(seed, limit=3):
-    """A few free alternatives built from the name the visitor typed."""
+    """A few free alternatives built from the name the visitor typed.
+
+    All availability checks happen in one query: this runs on every keystroke
+    from an unauthenticated endpoint, so per-candidate lookups would allow
+    hundreds of sequential queries per request.
+    """
     base = normalize_username(seed) or 'member'
     if base[0].isdigit():
         base = 'bd_' + base
     base = base[:USERNAME_MAX - 3]
-    out = []
+
+    candidates = []
+    seen = set()
+
+    def add(candidate):
+        ok, cleaned = validate_username(candidate)
+        if ok and cleaned not in seen:
+            seen.add(cleaned)
+            candidates.append(cleaned)
+
     for suffix in ('', '_bd', '_dhaka'):
-        candidate = (base + suffix)[:USERNAME_MAX]
-        ok, cleaned = validate_username(candidate)
-        if ok and not is_username_taken(cleaned) and cleaned not in out:
-            out.append(cleaned)
-        if len(out) >= limit:
-            return out
+        add((base + suffix)[:USERNAME_MAX])
     number = 1
-    while len(out) < limit and number < 500:
-        candidate = ('%s%d' % (base, number))[:USERNAME_MAX]
-        ok, cleaned = validate_username(candidate)
-        if ok and not is_username_taken(cleaned) and cleaned not in out:
-            out.append(cleaned)
+    while len(candidates) < limit + 25 and number < 500:
+        add(('%s%d' % (base, number))[:USERNAME_MAX])
         number += 1
-    return out
+
+    if not candidates:
+        return []
+    from .models import User
+    taken = {row[0] for row in User.query.filter(User.username.in_(candidates)).with_entities(User.username).all()}
+    return [name for name in candidates if name not in taken][:limit]
 
 
 def allocate_username(seed):

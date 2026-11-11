@@ -11,29 +11,21 @@
 
 <!-- ============================================================ HERO -->
 <section class="hero">
-  <div class="hero__mesh" aria-hidden="true"></div>
   <div class="hero__orb hero__orb--a" aria-hidden="true"></div>
   <div class="hero__orb hero__orb--b" aria-hidden="true"></div>
   <div class="hero__rules" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <div class="particle-canvas" aria-hidden="true"></div>
-  <div class="morph-blob morph-blob--a" aria-hidden="true"></div>
-  <div class="morph-blob morph-blob--b" aria-hidden="true"></div>
 
   <div class="shell hero__inner">
     <div class="hero__copy">
-      <p class="kicker" data-reveal>
-        <svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg>
-        Dhaka · Chattogram · Sylhet
-      </p>
-
-      <h1 class="display hero__title">
+      <h1 class="display hero__title" data-reveal>
         <span class="reveal-words" data-words>Find the flat.</span>
         <span class="reveal-words accent" data-words>Design the home.</span>
       </h1>
 
       <p class="lead" data-reveal>
-        Every listing on FlatLand BD is checked by a human before it goes live — real photos,
-        honest square footage, and interior studios that actually pick up the phone.
+        Every listing in Dhaka, Chattogram, and Sylhet is checked by a human before it goes live —
+        real photos, honest square footage, and interior studios that actually pick up the phone.
       </p>
 
       <div class="hero__actions" data-reveal>
@@ -50,11 +42,11 @@
       <dl class="hero__proof" data-reveal-group>
         <div>
           <dt>Live flats</dt>
-          <dd><span data-count="{{ stats.flats or 0 }}" data-count-suffix="+">{{ stats.flats or 0 }}</span></dd>
+          <dd><span data-count="{{ stats.flats or 0 }}" {% if stats.flats %}data-count-suffix="+"{% endif %}>{{ stats.flats or 0 }}</span></dd>
         </div>
         <div>
           <dt>Interior studios</dt>
-          <dd><span data-count="{{ stats.studios or 0 }}" data-count-suffix="+">{{ stats.studios or 0 }}</span></dd>
+          <dd><span data-count="{{ stats.studios or 0 }}" {% if stats.studios %}data-count-suffix="+"{% endif %}>{{ stats.studios or 0 }}</span></dd>
         </div>
         <div>
           <dt>Reply time</dt>
@@ -75,23 +67,25 @@
         <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"
              alt="Sunlit living room in a modern Dhaka apartment" width="1200" height="1500"
              fetchpriority="high" decoding="async">
-        <figcaption class="hero__tag">
+        <span class="hero__tag">
           <svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg>
           Photographed on site
-        </figcaption>
+        </span>
       </figure>
 
-      <figure class="frame frame--float" data-parallax="-24">
+      <figure class="frame frame--float" data-parallax="-0.24">
         <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
              alt="Interior designer reviewing material samples" width="800" height="800"
              loading="lazy" decoding="async">
       </figure>
 
-      <div class="hero__pricecard" data-parallax="18">
-        <p class="kicker">Avg. 3 BHK · Dhanmondi</p>
-        <p class="hero__pricecard-value">৳ <span data-count="1.42" data-count-dec="2">1.42</span> Cr</p>
-        <div class="bar"><span data-bar="72"></span></div>
-        <p class="body-sm muted">72% of buyers close within their budget band</p>
+      <div class="hero__vcard" data-parallax="0.18">
+        <p class="hero__vcard-title">Every flat is checked in person</p>
+        <ul class="hero__vcard-list">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Owner paperwork sighted</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Photos match the flat today</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Full price, stated up front</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -118,7 +112,6 @@
   <div class="shell">
     <div class="section-head" data-reveal="blur-up">
       <div>
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Handpicked</p>
         <h2 class="h1">Flats worth a Saturday visit</h2>
         <p class="lead">Fresh on the platform, checked this week, and ready for a walkthrough.</p>
       </div>
@@ -143,6 +136,68 @@
   </div>
 </section>
 
+<!-- ================================================ VERIFICATION STANDARD -->
+<section class="section section--verify" id="verification">
+  <div class="shell">
+    <div class="section-head section-head--center" data-reveal="blur-up">
+      <div>
+        <h2 class="h1">Checked by a person, before you ever see it</h2>
+        <p class="lead">A classifieds site publishes whatever arrives. We publish only what passes all four checks — that is the whole product.</p>
+      </div>
+    </div>
+
+    <div class="vreport" data-reveal="blur-up">
+      <header class="vreport__head">
+        <div class="vreport__doc">
+          <strong>Site verification report</strong>
+          <span>FlatLand BD review queue · run on every listing, every time</span>
+        </div>
+        <span class="vreport__seal"><svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg> Verified</span>
+      </header>
+
+      <ol class="vreport__list">
+        <li>
+          <svg class="i vreport__tick" aria-hidden="true"><use href="#i-check-circle"></use></svg>
+          <div>
+            <h3 class="h4">The owner is real</h3>
+            <p>Identity sighted and ownership paperwork checked before a listing even enters the queue.</p>
+          </div>
+          <span class="vreport__stamp">Sighted</span>
+        </li>
+        <li>
+          <svg class="i vreport__tick" aria-hidden="true"><use href="#i-check-circle"></use></svg>
+          <div>
+            <h3 class="h4">Photos match reality</h3>
+            <p>Every image is compared against the flat as it stands today — no stock swaps, no last year's paint.</p>
+          </div>
+          <span class="vreport__stamp">Matched</span>
+        </li>
+        <li>
+          <svg class="i vreport__tick" aria-hidden="true"><use href="#i-check-circle"></use></svg>
+          <div>
+            <h3 class="h4">Someone stood inside</h3>
+            <p>Agency-listed flats get an on-site visit from our team, and we coordinate visit timing for you.</p>
+          </div>
+          <span class="vreport__stamp">Visited</span>
+        </li>
+        <li>
+          <svg class="i vreport__tick" aria-hidden="true"><use href="#i-check-circle"></use></svg>
+          <div>
+            <h3 class="h4">The price is the price</h3>
+            <p>Published in full, with any brokerage stated separately. What you read is what you budget for.</p>
+          </div>
+          <span class="vreport__stamp">Stated</span>
+        </li>
+      </ol>
+
+      <footer class="vreport__foot">
+        <svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg>
+        Miss a check and the listing waits. We would rather list ten honest flats than a thousand ghosts.
+      </footer>
+    </div>
+  </div>
+</section>
+
 <!-- ================================================= INTERIOR STUDIOS -->
 <div class="wave-separator wave-separator--flip" aria-hidden="true">
   <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
@@ -151,7 +206,6 @@
   <div class="shell">
     <div class="section-head" data-reveal="blur-up">
       <div>
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-paint"></use></svg> Interior</p>
         <h2 class="h1">Studios that finish what they start</h2>
         <p class="lead">Full-home packages, kitchen rebuilds, and single-room refreshes — with prices stated up front.</p>
       </div>
@@ -184,7 +238,6 @@
   <div class="shell">
     <div class="section-head section-head--center" data-reveal="blur-up">
       <div>
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-compass"></use></svg> How it works</p>
         <h2 class="h1">Four steps from scrolling to keys</h2>
       </div>
     </div>
@@ -222,12 +275,26 @@
   </div>
 </section>
 
+<!-- ======================================================== COVERAGE -->
+<section class="section section--tight section--tint" id="areas">
+  <div class="shell">
+    <div class="coverage" data-reveal="blur-up">
+      <h2 class="h3">Where we hunt for homes</h2>
+      <div class="coverage__cities">
+        <span class="coverage__city"><svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg> Dhaka</span>
+        <span class="coverage__city"><svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg> Chattogram</span>
+        <span class="coverage__city"><svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg> Sylhet</span>
+      </div>
+      <p class="body-sm muted">Every listing in all three cities passes the same checks before it publishes. In Dhaka, our team coordinates your site visit.</p>
+    </div>
+  </div>
+</section>
+
 <!-- =========================================================== ABOUT -->
 <section class="section section--ink" id="about">
   <div class="shell">
     <div class="grid grid--split">
       <div class="stack" data-reveal="blur-up">
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-award"></use></svg> Why FlatLand BD</p>
         <h2 class="h1">We would rather list ten honest flats than a thousand ghosts.</h2>
         <p class="lead">
           Property hunting in Bangladesh breaks down for one reason: listings that do not exist.
@@ -259,7 +326,7 @@
           <p class="metric__label">Enquiries answered same day</p>
         </div>
         <div class="metric">
-          <p class="metric__value"><span data-count="0" data-count-suffix=" ৳">0 ৳</span></p>
+          <p class="metric__value"><span data-count="0" data-count-prefix="৳ ">৳ 0</span></p>
           <p class="metric__label">Charged to browse or enquire</p>
         </div>
       </div>
@@ -275,7 +342,6 @@
   <div class="shell">
     <div class="section-head" data-reveal="blur-up">
       <div>
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-quote"></use></svg> Client notes</p>
         <h2 class="h1">What buyers tell us afterwards</h2>
       </div>
     </div>
@@ -307,6 +373,60 @@
   </div>
 </section>
 
+<!-- ============================================================= FAQ -->
+<div class="wave-separator" aria-hidden="true">
+  <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
+</div>
+<section class="section" id="faq">
+  <div class="shell">
+    <div class="section-head section-head--center" data-reveal="blur-up">
+      <div>
+        <h2 class="h1">Questions we hear every day</h2>
+        <p class="lead">Short answers, real numbers. Anything else — WhatsApp us and a person replies.</p>
+      </div>
+    </div>
+
+    <div class="faq" data-reveal="blur-up">
+      <details>
+        <summary>Is FlatLand BD free to use?</summary>
+        <div class="faq__body">
+          <p>Browsing, shortlisting and enquiring are free — always. Owners publish listings free too. If a cost ever applies to a service, it is stated before you commit, never added later.</p>
+        </div>
+      </details>
+      <details>
+        <summary>How do I know the photos are real?</summary>
+        <div class="faq__body">
+          <p>Every image is checked against the flat as it stands today before the listing goes live. Where our team visited, the photos were taken on that visit. If a listing cannot be verified, it does not publish.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Do you take brokerage?</summary>
+        <div class="faq__body">
+          <p>Prices are published in full and any brokerage is stated separately, up front. There are no surprise charges at the doorstep — that commitment is the reason the review queue exists.</p>
+        </div>
+      </details>
+      <details>
+        <summary>How fast will someone reply?</summary>
+        <div class="faq__body">
+          <p>WhatsApp messages get a reply in about 15 minutes during working hours (Saturday–Thursday, 10:00–20:00), and 96% of enquiries are answered the same day.</p>
+        </div>
+      </details>
+      <details>
+        <summary>I own a flat — how do I list it?</summary>
+        <div class="faq__body">
+          <p>Post it in about two minutes from the <a href="{{ url_for('public.post_listing') }}">listing form</a>. It enters our review queue, the team checks identity, paperwork and photos, and it publishes once approved. You can delete it any time.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Which areas do you cover?</summary>
+        <div class="faq__body">
+          <p>Dhaka, Chattogram and Sylhet. Same-day site visits run across Dhaka, and listings in the other cities go through the same verification before they publish.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
 <!-- ========================================================= CONTACT -->
 <div class="wave-separator" aria-hidden="true">
   <svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 22 C 360 54, 720 0, 1080 32 S 1440 8, 1440 8 L1440 54 0 54Z"/></svg>
@@ -315,7 +435,6 @@
   <div class="shell">
     <div class="contact" data-reveal="blur-up">
       <div class="contact__intro">
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-message"></use></svg> Request a quote</p>
         <h2 class="h1">Tell us what you need. We reply the same day.</h2>
         <p class="lead">
           Buying, renting, or redesigning — one message is enough to start. No account, no fee, no spam.
@@ -372,40 +491,41 @@
           </label>
         </div>
 
-        <div class="form-grid-2">
+        <details class="form-extra">
+          <summary>Add details — budget, timeline, service type <em class="form-extra__hint">(optional)</em></summary>
+          <div class="form-grid-2">
+            <label class="field">
+              <span class="field__label">Budget</span>
+              <select class="select" name="budget">
+                <option value="">No fixed budget yet</option>
+                <option value="Under 50 Lakh">Under ৳ 50 Lakh</option>
+                <option value="50 Lakh - 1 Crore">৳ 50 Lakh – 1 Crore</option>
+                <option value="1 - 2 Crore">৳ 1 – 2 Crore</option>
+                <option value="Above 2 Crore">Above ৳ 2 Crore</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">Timeline</span>
+              <select class="select" name="timeline">
+                <option value="">Flexible</option>
+                <option value="This month">This month</option>
+                <option value="1-3 months">1 – 3 months</option>
+                <option value="3-6 months">3 – 6 months</option>
+                <option value="Just researching">Just researching</option>
+              </select>
+            </label>
+          </div>
           <label class="field">
-            <span class="field__label">Budget</span>
-            <select class="select" name="budget">
-              <option value="">No fixed budget yet</option>
-              <option value="Under 50 Lakh">Under ৳ 50 Lakh</option>
-              <option value="50 Lakh - 1 Crore">৳ 50 Lakh – 1 Crore</option>
-              <option value="1 - 2 Crore">৳ 1 – 2 Crore</option>
-              <option value="Above 2 Crore">Above ৳ 2 Crore</option>
-            </select>
+            <span class="field__label">Service type (for interior work)</span>
+            <input class="input" type="text" name="service_type" placeholder="Full home, kitchen, single room…" maxlength="120">
           </label>
-          <label class="field">
-            <span class="field__label">Timeline</span>
-            <select class="select" name="timeline">
-              <option value="">Flexible</option>
-              <option value="This month">This month</option>
-              <option value="1-3 months">1 – 3 months</option>
-              <option value="3-6 months">3 – 6 months</option>
-              <option value="Just researching">Just researching</option>
-            </select>
-          </label>
-        </div>
-
-        <label class="field">
-          <span class="field__label">Service type (for interior work)</span>
-          <input class="input" type="text" name="service_type" placeholder="Full home, kitchen, single room…" maxlength="120">
-        </label>
+        </details>
 
         <label class="field">
           <span class="field__label">Your message <em>*</em></span>
-          <textarea class="textarea" name="message" rows="4" required maxlength="1200"
-                    placeholder="Area, BHK, floor preference, move-in date — anything that helps us shortlist."
-                    data-counter-for="contact-count"></textarea>
-          <span class="field__hint"><span id="contact-count">0</span> / 1200 characters</span>
+          <textarea class="textarea" id="contact-message" name="message" rows="4" required maxlength="1200" enterkeyhint="send"
+                    placeholder="Area, BHK, floor preference, move-in date — anything that helps us shortlist."></textarea>
+          <span class="field__hint" data-counter-for="contact-message"><span id="contact-count">0</span> / 1200 characters</span>
         </label>
 
         <input type="hidden" name="contact" value="">
@@ -430,7 +550,7 @@
       <h2 class="h2">Own a flat or run an interior studio?</h2>
       <p class="lead">Publish it free. We review, photograph, and put it in front of buyers who are already searching.</p>
     </div>
-    <a class="btn btn--lg btn--ink btn-arrow" href="{{ url_for('public.post_listing') }}">
+    <a class="btn btn--lg btn-arrow" href="{{ url_for('public.post_listing') }}">
       Post a listing
       <svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
     </a>

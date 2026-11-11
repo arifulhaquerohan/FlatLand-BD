@@ -8,20 +8,43 @@
 
 {% block title %}{% if can_interior %}Post a listing{% else %}Post your flat{% endif %} | FlatLand BD{% endblock %}
 
-{% block content %}
-<section class="section section--flush">
-  <div class="shell shell--tight">
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/auth.css') }}">
+{% endblock %}
 
-    <div class="stack stack--sm" data-reveal>
-      <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-plus-circle"></use></svg> New submission</p>
+{% block content %}
+<!-- ================================================ POST BAND -->
+<section class="authx-band">
+  <div class="authx__bg" aria-hidden="true">
+    <div class="authx__orb authx__orb--a"></div>
+    <div class="authx__orb authx__orb--b"></div>
+    <div class="authx__grid"></div>
+  </div>
+  <div class="shell shell--tight authx-band__inner">
+    <div class="authx-band__copy">
+      <p class="authx__kicker"><svg class="i" aria-hidden="true"><use href="#i-upload"></use></svg> Post a listing</p>
       {% if can_interior %}
-        <h1 class="display display--sm">Publish a flat or an interior studio</h1>
-        <p class="lead">Three short steps. Our team reviews everything before it goes live — usually within 24 hours.</p>
+        <h1 class="authx__title">Publish a flat or an interior studio</h1>
+        <p class="authx__lead">Three short steps. Our team reviews everything before it goes live — usually within 24 hours.</p>
       {% else %}
-        <h1 class="display display--sm">Publish your flat</h1>
-        <p class="lead">Two short steps. Our team reviews every flat before it goes live — usually within 24 hours.</p>
+        <h1 class="authx__title">Publish your flat</h1>
+        <p class="authx__lead">Two short steps. Our team reviews every flat before it goes live — usually within 24 hours.</p>
       {% endif %}
+      <div class="authx-band__facts">
+        <span><svg class="i" aria-hidden="true"><use href="#i-verified"></use></svg> Reviewed by a human before publish</span>
+        <span><svg class="i" aria-hidden="true"><use href="#i-sparkles"></use></svg> Free to publish</span>
+      </div>
     </div>
+    <div class="authx-band__actions">
+      <a class="btn btn--ghost" href="{{ url_for('public.dashboard') }}">
+        <svg class="i" aria-hidden="true"><use href="#i-user-circle"></use></svg> My dashboard
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section section--flush">
+  <div class="shell shell--tight" style="padding-top:var(--s6)">
 
     <form class="wizard" method="POST" action="{{ url_for('public.post_listing') }}"
           enctype="multipart/form-data" data-wizard data-veil data-reveal>
@@ -181,9 +204,9 @@
         <label class="field">
           <span class="field__label">Description <em>*</em></span>
           <textarea class="textarea" name="description" rows="6" required maxlength="4000"
-                    id="listing-description" data-counter-for="desc-count"
+                    id="listing-description"
                     placeholder="Floor, facing, lift, parking, nearby landmarks, what makes it worth a visit…"></textarea>
-          <span class="field__hint"><span id="desc-count">0</span> / 4000 characters</span>
+          <span class="field__hint" data-counter-for="listing-description"><span id="desc-count">0</span> / 4000 characters</span>
         </label>
 
         {% if current_user.is_authenticated and current_user.role == 'admin' %}

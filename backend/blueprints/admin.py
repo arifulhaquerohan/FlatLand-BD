@@ -26,7 +26,7 @@ from ..models import MediaAsset
 # pyrefly: ignore [import-error]
 from .. import cloudinary_service
 # pyrefly: ignore [import-error]
-from ..utils import delete_listing_media, delete_media_for_urls, media_provider_for_url, is_cloudinary_configured
+from ..utils import delete_listing_media, delete_media_for_urls, media_provider_for_url, is_cloudinary_configured, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -169,6 +169,7 @@ def approve_listing(item_type, id):
     item = get_listing_item(item_type, id)
     item.status = 'approved'
     db.session.commit()
+    invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
     flash('Listing approved!', 'success')
     tab = 'flats' if item_type == 'flat' else 'services'
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab=tab))
@@ -178,9 +179,12 @@ def approve_listing(item_type, id):
 @limiter.limit("20 per minute")
 def delete_listing(item_type, id):
     item = get_listing_item(item_type, id)
-    delete_listing_media(item)
     db.session.delete(item)
     db.session.commit()
+    # Storage is only touched once the row is really gone, so a failed
+    # commit can never leave a live listing with dead image URLs.
+    delete_listing_media(item)
+    invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
     flash('Listing deleted!', 'success')
     tab = 'flats' if item_type == 'flat' else 'services'
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab=tab))
@@ -194,6 +198,7 @@ def update_listing_status(item_type, id):
     item = get_listing_item(item_type, id)
     item.status = status
     db.session.commit()
+    invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
     flash('Listing status updated!', 'success')
     return redirect(request.referrer or url_for('admin.admin_dashboard'))
 
@@ -206,6 +211,7 @@ def update_lead_status(id):
     lead = Lead.query.get_or_404(id)
     lead.status = status
     db.session.commit()
+    invalidate_cached_value(*ADMIN_CACHE_KEYS)
     flash('Lead status updated!', 'success')
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab='leads'))
 
@@ -216,6 +222,7 @@ def delete_lead(id):
     lead = Lead.query.get_or_404(id)
     db.session.delete(lead)
     db.session.commit()
+    invalidate_cached_value(*ADMIN_CACHE_KEYS)
     flash('Lead deleted!', 'success')
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab='leads'))
 
@@ -235,16 +242,24 @@ def bulk_update_listings(item_type):
     else: abort(404)
 
     query = model.query.filter(model.id.in_(ids))
-    count = len(ids)
     if action in LISTING_STATUSES:
-        query.update({'status': action}, synchronize_session=False)
+        count = query.update({'status': action}, synchronize_session=False)
         db.session.commit()
+        invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
         flash(f'{count} listing(s) updated to {action}!', 'success')
     elif action == 'delete':
-        for row in query.all():
-            delete_listing_media(row)
-        query.delete(synchronize_session=False)
+        # Delete through the session, not query.delete(): the gallery
+        # cascade lives on the ORM relationship and SQLite deployments
+        # have no DB-level ON DELETE to fall back on.
+        rows = query.all()
+        for row in rows:
+            db.session.delete(row)
+        count = len(rows)
         db.session.commit()
+        # Storage is only touched once the rows are really gone.
+        for row in rows:
+            delete_listing_media(row)
+        invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
         flash(f'{count} listing(s) permanently deleted!', 'success')
     else: abort(400)
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab=redirect_tab))
@@ -261,14 +276,15 @@ def bulk_update_leads():
         return redirect(request.referrer or url_for('admin.admin_dashboard', tab='leads'))
 
     query = Lead.query.filter(Lead.id.in_(ids))
-    count = len(ids)
     if action in LEAD_STATUSES:
-        query.update({'status': action}, synchronize_session=False)
+        count = query.update({'status': action}, synchronize_session=False)
         db.session.commit()
+        invalidate_cached_value(*ADMIN_CACHE_KEYS)
         flash(f'{count} lead(s) updated to {action}!', 'success')
     elif action == 'delete':
-        query.delete(synchronize_session=False)
+        count = query.delete(synchronize_session=False)
         db.session.commit()
+        invalidate_cached_value(*ADMIN_CACHE_KEYS)
         flash(f'{count} lead(s) permanently deleted!', 'success')
     else: abort(400)
     return redirect(request.referrer or url_for('admin.admin_dashboard', tab='leads'))
@@ -281,6 +297,17 @@ def edit_listing(item_type, id):
     if request.method == 'POST':
         status = normalize_status(request.form.get('status'))
         if status: item.status = status
+
+        # A cleared form must never wipe a listing: required text fields keep
+        # the old value if the POST arrives without one.
+        is_flat = item_type == 'flat'
+        required_fields = (('title', 'Title'), ('location', 'Location'), ('description', 'Description')) if is_flat \
+            else (('provider_name', 'Studio name'), ('service_type', 'Speciality'), ('description', 'Description'))
+        blanks = [label for field, label in required_fields if not request.form.get(field, '').strip()]
+        if blanks:
+            db.session.rollback()
+            flash('%s cannot be empty. Nothing was saved.' % ' and '.join(blanks), 'warning')
+            return redirect(url_for('admin.edit_listing', item_type=item_type, id=id))
 
         image_file = request.files.get('image_file')
         gallery_files = request.files.getlist('image_files')
@@ -339,6 +366,7 @@ def edit_listing(item_type, id):
                 if url and url != item.image_url: db.session.add(InteriorImage(service=item, image_url=url))
 
         db.session.commit()
+        invalidate_cached_value(*ALL_LISTING_CACHE_KEYS)
         flash('Listing updated successfully!', 'success')
         return redirect(url_for('admin.admin_dashboard', tab='flats' if item_type == 'flat' else 'services'))
 
@@ -358,30 +386,102 @@ def generate_description():
         return jsonify({'ok': False, 'error': 'The writer could not produce a description. Please try again.'}), 502
     return jsonify({'ok': True, 'description': generated_text})
 
+
+# --------------------------------------------------------------------------- #
+#  Visitors (page-view beacon stats)
+# --------------------------------------------------------------------------- #
+def _visitor_stats(days=14):
+    """Page-view and unique-visitor counts over the last `days` Dhaka days."""
+    from ..models import PageView
+    from ..utils import dhaka_now, dhaka_date, DHAKA_UTC_OFFSET
+    from sqlalchemy import func
+
+    now = dhaka_now()
+    start_days = now.date() - timedelta(days=days - 1)
+    start_utc = datetime.combine(start_days, datetime.min.time()) - DHAKA_UTC_OFFSET
+    today_start = datetime.combine(now.date(), datetime.min.time()) - DHAKA_UTC_OFFSET
+
+    rows = (PageView.query
+            .with_entities(PageView.created_at, PageView.visitor_hash, PageView.path, PageView.device)
+            .filter(PageView.created_at >= start_utc).all())
+
+    daily = {str((start_days + timedelta(days=off)).isoformat()): 0 for off in range(days)}
+    uniques_daily = [set() for _ in range(days)]
+    today_count = 0
+    uniques_7d = set()
+    views_7d = 0
+    devices_7d = {'mobile': 0, 'tablet': 0, 'desktop': 0}
+    path_counts = {}
+
+    for created_at, vhash, path, device in rows:
+        if not created_at:
+            continue
+        day = dhaka_date(created_at)
+        key = day.isoformat()
+        if key in daily:
+            daily[key] += 1
+        day_idx = (day - start_days).days
+        if 0 <= day_idx < days and vhash:
+            uniques_daily[day_idx].add(vhash)
+        if created_at >= today_start:
+            today_count += 1
+        if created_at >= now - timedelta(days=7):
+            views_7d += 1
+            if vhash:
+                uniques_7d.add(vhash)
+            if device in devices_7d:
+                devices_7d[device] += 1
+            if path:
+                path_counts[path] = path_counts.get(path, 0) + 1
+
+    series = [daily[str((start_days + timedelta(days=off)).isoformat())] for off in range(days)]
+    labels = [(start_days + timedelta(days=off)).strftime('%d %b') for off in range(days)]
+    top_paths = sorted(path_counts.items(), key=lambda kv: -kv[1])[:6]
+
+    return {
+        'today': today_count,
+        'views_7d': views_7d,
+        'uniques_7d': len(uniques_7d),
+        'devices_7d': devices_7d,
+        'series': series,
+        'labels': labels,
+        'peak': max([1] + series),
+        'top_paths': top_paths,
+        'total': len(rows),
+        'uniques_today': len(uniques_daily[days - 1]) if days else 0,
+    }
+
+
 # --------------------------------------------------------------------------- #
 #  Overview: real activity for the last 14 days
 # --------------------------------------------------------------------------- #
 def _build_trend(days=14):
-    """Daily submission and enquiry counts, ready for the dashboard charts."""
-    from sqlalchemy import func
+    """Daily submission and enquiry counts, ready for the dashboard charts.
 
-    today = datetime.utcnow().date()
+    Days are Bangladesh local days (UTC+6): the audience never thinks in UTC,
+    and grouping by the stored UTC date split "today" at 06:00 local time.
+    Rows are pulled as bare timestamps for the window and bucketed here —
+    GROUP BY on the stored values can only produce UTC-day buckets portably.
+    """
+    from ..utils import dhaka_now, dhaka_date, DHAKA_UTC_OFFSET
+
+    today = dhaka_now().date()
     start_date = today - timedelta(days=days - 1)
-    start_dt = datetime.combine(start_date, datetime.min.time())
+    # UTC instant at which the first Dhaka day of the window begins.
+    start_dt = datetime.combine(start_date, datetime.min.time()) - DHAKA_UTC_OFFSET
 
     listing_counts, lead_counts = {}, {}
 
     def _count_by_day(model, bucket):
         try:
-            rows = db.session.query(
-                func.date(model.created_at).label('day'),
-                func.count(model.id),
-            ).filter(model.created_at >= start_dt).group_by(func.date(model.created_at)).all()
+            rows = db.session.query(model.created_at).filter(model.created_at >= start_dt).all()
         except Exception:
             rows = []
-        for day, total in rows:
+        for (created_at,) in rows:
+            day = dhaka_date(created_at)
             if day:
-                bucket[day] = int(total)
+                key = day.isoformat()
+                bucket[key] = bucket.get(key, 0) + 1
 
     # Aggregate in the database instead of pulling every row into Python.
     _count_by_day(Flat, listing_counts)
@@ -391,8 +491,8 @@ def _build_trend(days=14):
     listings_series, leads_series, day_rows = [], [], []
     for offset in range(days):
         day = start_date + timedelta(days=offset)
-        listings = listing_counts.get(day, 0)
-        leads = lead_counts.get(day, 0)
+        listings = listing_counts.get(day.isoformat(), 0)
+        leads = lead_counts.get(day.isoformat(), 0)
         listings_series.append(listings)
         leads_series.append(leads)
         day_rows.append({
@@ -696,6 +796,7 @@ def system_health():
 
     return render_template(
         'admin_system.html',
+        visitors=_visitor_stats(),
         summary=summary,
         check_groups=check_groups,
         runtime=runtime,

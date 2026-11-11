@@ -27,6 +27,17 @@
     var fab = $("[data-totop]");
     if (!rail && !head && !fab) return;
 
+    // The floating action stack duplicates the footer's own call/WhatsApp
+    // buttons and its to-top is pointless once you are at the page end, so
+    // it steps aside while the footer is on screen.
+    var footer = $(".footer");
+    if (footer && "IntersectionObserver" in window) {
+      var footerIO = new IntersectionObserver(function (entries) {
+        doc.body.classList.toggle("footer-in-view", entries[0].isIntersecting);
+      }, { threshold: 0.08 });
+      footerIO.observe(footer);
+    }
+
     var ticking = false;
     function paint() {
       var y = window.pageYOffset || root.scrollTop || 0;
@@ -257,7 +268,9 @@
       doc.body.style.position = "";
       doc.body.style.top = "";
       doc.body.style.width = "";
-      window.scrollTo(0, lockedY);
+      // Restore immediately; the page's smooth-scroll CSS would animate
+      // from the top when the fixed-body lock is released.
+      window.scrollTo({ top: lockedY, behavior: "instant" });
     }
   }
   window.FLB_lockScroll = lockScroll;
@@ -439,7 +452,21 @@
                (node.querySelector("img") ? node.querySelector("img").alt : "")
         };
       }).filter(function (i) { return i.src; });
-      openLightbox(items, pool.indexOf(trigger));
+      // The stage and its own thumbnail are the same photo: dedupe by src,
+      // then start on whichever image was actually clicked.
+      var seen = {};
+      var unique = [];
+      items.forEach(function (item) {
+        if (!seen[item.src]) { seen[item.src] = true; unique.push(item); }
+      });
+      var clickSrc = trigger.getAttribute("data-zoom-src") || trigger.getAttribute("src") ||
+                     (trigger.querySelector("img") ? trigger.querySelector("img").src : "");
+      var startIndex = 0;
+      unique.some(function (item, i) {
+        if (item.src === clickSrc) { startIndex = i; return true; }
+        return false;
+      });
+      openLightbox(unique, startIndex);
     });
   }
 
@@ -455,17 +482,41 @@
         if (!t) return;
         var src = t.getAttribute("data-src");
         var srcset = t.getAttribute("data-srcset");
+        thumbs.forEach(function (o, oi) { o.classList.toggle("is-active", oi === i); });
+        if (reduceMotion) {
+          stage.src = src;
+          if (srcset) stage.srcset = srcset;
+          stage.setAttribute("data-zoom-src", src);
+          stage.style.opacity = "1";
+          return;
+        }
         stage.style.opacity = "0";
         window.setTimeout(function () {
           stage.src = src;
           if (srcset) stage.srcset = srcset;
           stage.setAttribute("data-zoom-src", src);
-          stage.style.opacity = "1";
-        }, reduceMotion ? 0 : 130);
-        thumbs.forEach(function (o, oi) { o.classList.toggle("is-active", oi === i); });
+          // Fade back in only once the new photo can actually paint, so the
+          // stage never shows a blank frame on a slow connection.
+          var shown = false;
+          var reveal = function () {
+            if (shown) return;
+            shown = true;
+            stage.style.opacity = "1";
+          };
+          if (stage.decode) stage.decode().then(reveal, reveal);
+          else if (stage.complete) reveal();
+          else on(stage, "load", reveal, { once: true });
+          window.setTimeout(reveal, 800); // never leave the stage blank
+        }, 160);
       }
       thumbs.forEach(function (t, i) {
-        on(t, "click", function () { select(i); });
+        on(t, "click", function (e) {
+          // Thumbs swap the stage only — they carry data-zoom attrs so the
+          // stage's lightbox can page through every photo, but the thumb
+          // click itself must not bubble to the zoom trigger.
+          e.stopPropagation();
+          select(i);
+        });
       });
       select(0);
     });
@@ -588,10 +639,13 @@
       on(el, "change", function () { if (el.form) el.form.submit(); });
     });
 
-    // Character counters
+    // Character counters — `data-counter-for` lives on the OUTPUT element
+    // and names the input's id. Writing text into a form field would
+    // replace its value (and get submitted), so refuse that shape outright.
     $$("[data-counter-for]").forEach(function (out) {
+      if (!out || /^(textarea|input|select)$/i.test(out.tagName)) return;
       var input = doc.getElementById(out.getAttribute("data-counter-for"));
-      if (!input) return;
+      if (!input || out === input) return;
       var max = input.getAttribute("maxlength");
       function paint() {
         out.textContent = (input.value || "").length + (max ? " / " + max : "") + " characters";
@@ -600,6 +654,65 @@
       paint();
     });
   }
+
+  /* ------------------------------------------------- confirm dialogs */
+  function initConfirm() {
+    var host = $("[data-confirm-dialog]");
+    if (!host) return;
+    var titleEl = $("[data-confirm-title]", host);
+    var bodyEl = $("[data-confirm-body]", host);
+    var okBtn = $("[data-confirm-ok]", host);
+    var pending = null;
+
+    function close() { host.classList.remove("is-open"); pending = null; }
+
+    on(doc, "click", function (e) {
+      var trigger = e.target.closest ? e.target.closest("[data-confirm]") : null;
+      if (!trigger) return;
+      e.preventDefault();
+      pending = trigger;
+      if (titleEl) titleEl.textContent = trigger.getAttribute("data-confirm-title") || "Please confirm";
+      if (bodyEl) bodyEl.textContent = trigger.getAttribute("data-confirm") || "This action cannot be undone.";
+      if (okBtn) okBtn.textContent = trigger.getAttribute("data-confirm-ok-label") || "Yes, continue";
+      host.classList.add("is-open");
+      if (okBtn) okBtn.focus();
+    });
+
+    on(okBtn, "click", function () {
+      if (!pending) return;
+      var target = pending;
+      pending = null;
+      host.classList.remove("is-open");
+      if (target.tagName === "FORM") { target.submit(); return; }
+      var form = target.closest("form");
+      if (target.tagName === "BUTTON" && form) {
+        if (target.name) {
+          var carry = doc.createElement("input");
+          carry.type = "hidden";
+          carry.name = target.name;
+          carry.value = target.value || "";
+          form.appendChild(carry);
+        }
+        form.submit();
+        return;
+      }
+      if (target.href) { window.location.href = target.href; return; }
+      if (form) form.submit();
+    });
+    $$("[data-confirm-cancel]", host).forEach(function (b) { on(b, "click", close); });
+    on(host, "click", function (e) { if (e.target === host) close(); });
+    on(doc, "keydown", function (e) { if (e.key === "Escape") close(); });
+  }
+
+  /* -------------------------------------------------- filters toggle */
+  $$("[data-filters-toggle]").forEach(function (btn) {
+    on(btn, "click", function () {
+      var form = btn.closest("form");
+      if (!form) return;
+      var open = form.classList.toggle("is-open");
+      btn.setAttribute("aria-expanded", String(open));
+    });
+  });
 
   /* ---------------------------------------------------------- wizard */
   function initWizard() {
@@ -725,13 +838,25 @@
       if (sessionStorage.getItem(STORAGE_KEY) === "1") return;
     } catch (e) {}
 
+    var lastFocus = null;
+
+    function show() {
+      lastFocus = doc.activeElement;
+      pop.classList.add("is-on");
+      var target = $("[data-maint-dismiss]", pop) || pop;
+      if (target && target.focus) target.focus();
+    }
+
     function dismiss() {
+      if (!pop.classList.contains("is-on")) return;
       pop.classList.remove("is-on");
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+      lastFocus = null;
       try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch (e) {}
     }
 
     // Popup appears shortly after load, then closes itself.
-    window.setTimeout(function () { pop.classList.add("is-on"); }, reduceMotion ? 0 : 600);
+    window.setTimeout(show, reduceMotion ? 0 : 600);
     window.setTimeout(dismiss, 9000);
 
     $$("[data-maint-dismiss]", pop).forEach(function (btn) {
@@ -740,7 +865,23 @@
     var backdrop = $("[data-maint-backdrop]", pop);
     if (backdrop) on(backdrop, "click", dismiss);
     on(doc, "keydown", function (e) {
-      if (e.key === "Escape" && pop.classList.contains("is-on")) dismiss();
+      if (!pop.classList.contains("is-on")) return;
+      if (e.key === "Escape") { dismiss(); return; }
+      if (e.key === "Tab") {
+        // The dialog names exactly one focusable control; keep Tab inside it.
+        var focusables = $$("a[href], button:not([disabled]), [tabindex='0']", pop)
+          .filter(function (el) { return el.offsetParent !== null; });
+        if (!focusables.length) return;
+        var first = focusables[0];
+        var last = focusables[focusables.length - 1];
+        if (e.shiftKey && (doc.activeElement === first || !pop.contains(doc.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (doc.activeElement === last || !pop.contains(doc.activeElement))) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     });
   }
 
@@ -935,6 +1076,25 @@
     });
   }
 
+  /* ------------------------------------------------ keyboard vs fixed UI */
+  function initKeyboardAware() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    function paint() {
+      // The software keyboard shrinks the visual viewport. A gap over ~120px
+      // while a field is focused means it is open: hide the dock and FABs so
+      // they stop covering what is being typed.
+      var focused = doc.activeElement &&
+                    /^(INPUT|TEXTAREA|SELECT)$/.test(doc.activeElement.tagName);
+      var kb = focused && (window.innerHeight - vv.height) > 120;
+      doc.body.classList.toggle("kb-open", !!kb);
+    }
+    vv.addEventListener("resize", paint);
+    vv.addEventListener("scroll", paint);
+    on(doc, "focusin", function () { window.setTimeout(paint, 80); });
+    on(doc, "focusout", function () { window.setTimeout(paint, 80); });
+  }
+
   /* ------------------------------------------------------------- boot */
   ready(function () {
     initScrollChrome();
@@ -952,11 +1112,13 @@
     initUploads();
     initFormChrome();
     initWizard();
+    initConfirm();
     initCopy();
     initMagnetic();
     initTilt();
     initParallax();
     initSmoothAnchors();
+    initKeyboardAware();
     initMaintenanceBanner();
     initUsernameField();
     initBdPhone();

@@ -83,6 +83,7 @@ if database_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
+
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
 app.config['LISTINGS_PER_PAGE'] = int(os.getenv('LISTINGS_PER_PAGE', '9'))
 app.config['ADMIN_DASHBOARD_RECENT_LIMIT'] = int(os.getenv('ADMIN_DASHBOARD_RECENT_LIMIT', '8'))
@@ -173,8 +174,10 @@ def override_url_for():
     from flask import url_for as _url_for
     def custom_url_for(endpoint, **values):
         if endpoint and "." not in endpoint and endpoint != "static":
-            admin_endpoints = {'admin_dashboard', 'approve_listing', 'delete_listing', 'update_listing_status', 'update_lead_status', 'delete_lead', 'bulk_update_listings', 'bulk_update_leads', 'edit_listing', 'export_data', 'preview', 'media_library', 'media_test', 'system_health'}
-            if endpoint in admin_endpoints:
+            # Resolve against the actual URL map so every admin endpoint is
+            # covered, including ones added later - a hardcoded list silently
+            # misses new routes and turns their url_for calls into 500s.
+            if f"admin.{endpoint}" in app.view_functions:
                 endpoint = f"admin.{endpoint}"
             else:
                 endpoint = f"public.{endpoint}"
@@ -225,7 +228,9 @@ def add_security_headers(response):
     if path.startswith('/static/'): response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     elif path.startswith(f"/{app.config['ADMIN_PATH']}") or current_user_auth: response.headers['Cache-Control'] = 'no-store'
     
-    if request.method == 'GET' and not current_user_auth and not response.headers.get('Set-Cookie') and endpoint in PUBLIC_CACHE_ENDPOINTS:
+    # Cache only real successes: a pending/deleted listing answers 404 here,
+    # and caching that would hide the listing for the cache TTL after approval.
+    if request.method == 'GET' and response.status_code == 200 and not current_user_auth and not response.headers.get('Set-Cookie') and endpoint in PUBLIC_CACHE_ENDPOINTS:
         ttl = app.config['PUBLIC_CACHE_TTL_LONG'] if endpoint in {'public.robots', 'public.sitemap'} else app.config['PUBLIC_CACHE_TTL']
         response.headers.setdefault('Cache-Control', f'public, max-age={ttl}, stale-while-revalidate={ttl // 2}')
         response.headers.setdefault('X-DNS-Prefetch-Control', 'on')
@@ -314,6 +319,21 @@ def ensure_schema_upgrades():
 
 
 with app.app_context():
+    # SQLite concurrency: WAL lets page-view beacon writes and page reads run
+    # at the same time (the default journal locks the whole file per write),
+    # and NORMAL sync drops most fsyncs while staying crash-safe in practice.
+    if database_url.startswith('sqlite'):
+        from sqlalchemy import event as _sa_event
+
+        def _sqlite_pragmas(dbapi_conn, _record):
+            cur = dbapi_conn.cursor()
+            cur.execute('PRAGMA journal_mode=WAL')
+            cur.execute('PRAGMA synchronous=NORMAL')
+            cur.execute('PRAGMA busy_timeout=5000')
+            cur.close()
+
+        _sa_event.listen(db.engine, 'connect', _sqlite_pragmas)
+
     db.create_all()
     ensure_schema_upgrades()
 

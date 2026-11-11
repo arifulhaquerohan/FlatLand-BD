@@ -180,54 +180,6 @@
     });
   }
 
-  /* ------------------------------------------------------- confirm dialogs */
-  function initConfirm() {
-    var host = $("[data-confirm-dialog]");
-    if (!host) return;
-    var titleEl = $("[data-confirm-title]", host);
-    var bodyEl = $("[data-confirm-body]", host);
-    var okBtn = $("[data-confirm-ok]", host);
-    var pending = null;
-
-    function close() { host.classList.remove("is-open"); pending = null; }
-
-    on(doc, "click", function (e) {
-      var trigger = e.target.closest ? e.target.closest("[data-confirm]") : null;
-      if (!trigger) return;
-      e.preventDefault();
-      pending = trigger;
-      if (titleEl) titleEl.textContent = trigger.getAttribute("data-confirm-title") || "Please confirm";
-      if (bodyEl) bodyEl.textContent = trigger.getAttribute("data-confirm") || "This action cannot be undone.";
-      if (okBtn) okBtn.textContent = trigger.getAttribute("data-confirm-ok-label") || "Yes, continue";
-      host.classList.add("is-open");
-      if (okBtn) okBtn.focus();
-    });
-
-    on(okBtn, "click", function () {
-      if (!pending) return;
-      var target = pending;
-      pending = null;
-      host.classList.remove("is-open");
-      if (target.tagName === "FORM") { target.submit(); return; }
-      var form = target.closest("form");
-      if (target.tagName === "BUTTON" && form) {
-        if (target.name) {
-          var carry = doc.createElement("input");
-          carry.type = "hidden";
-          carry.name = target.name;
-          carry.value = target.value || "";
-          form.appendChild(carry);
-        }
-        form.submit();
-        return;
-      }
-      if (target.href) { window.location.href = target.href; return; }
-      if (form) form.submit();
-    });
-    $$("[data-confirm-cancel]", host).forEach(function (b) { on(b, "click", close); });
-    on(host, "click", function (e) { if (e.target === host) close(); });
-    on(doc, "keydown", function (e) { if (e.key === "Escape") close(); });
-  }
 
   /* ---------------------------------------------------- client side filter */
   function initTableFilter() {
@@ -456,7 +408,6 @@
     initRail();
     initPalette();
     initSelection();
-    initConfirm();
     initTableFilter();
     initSpark();
     initBarChart();

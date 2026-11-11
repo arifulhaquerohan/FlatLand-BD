@@ -5,7 +5,6 @@
 
 {% block content %}
 <section class="page-head">
-  <div class="hero__mesh hero__mesh--soft" aria-hidden="true"></div>
   <div class="shell">
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="{{ url_for('public.index') }}">Home</a>
@@ -15,11 +14,10 @@
 
     <div class="page-head__grid">
       <div class="stack stack--sm" data-reveal="blur-up">
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Live inventory</p>
         <h1 class="display display--sm">Flats, checked before they reach you</h1>
         <p class="lead">
           {% if total_matches %}
-            <strong>{{ total_matches }}</strong> {{ 'flat' if total_matches == 1 else 'flats' }} match your filters.
+            <strong>{{ total_matches }}</strong> {{ 'flat matches' if total_matches == 1 else 'flats match' }} your filters.
             Showing {{ page_listing_count }} on this page.
           {% else %}
             Filter by budget, size, and area — every result is a flat our team has verified.
@@ -42,6 +40,12 @@
   <div class="shell">
 
     <form class="filters" method="GET" action="{{ url_for('public.flats') }}" data-reveal>
+      <button class="filters__toggle" type="button" data-filters-toggle aria-expanded="false" aria-controls="filters-body">
+        <svg class="i" aria-hidden="true"><use href="#i-sliders"></use></svg> Filters
+        {% if filters_applied %}<span class="filters__count" aria-hidden="true"></span>{% endif %}
+      </button>
+
+      <div class="filters__body" id="filters-body">
       <div class="filters__row">
         <label class="field field--grow">
           <span class="field__label">Search</span>
@@ -90,6 +94,7 @@
             <svg class="i" aria-hidden="true"><use href="#i-sliders"></use></svg> Apply
           </button>
         </div>
+      </div>
       </div>
 
       <div class="filters__chips">

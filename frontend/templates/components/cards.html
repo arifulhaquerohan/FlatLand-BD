@@ -22,7 +22,7 @@
     <div class="listing__specs">
       {% if flat.bhk %}<span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-bed"></use></svg>{{ flat.bhk }} BHK</span>{% endif %}
       {% if flat.area_sqft %}<span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-ruler"></use></svg>{{ flat.area_sqft }} sqft</span>{% endif %}
-      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>{{ (flat.images | length) + 1 }} photos</span>
+      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>{{ (flat.images | length) + 1 }} {{ 'photo' if (flat.images | length) + 1 == 1 else 'photos' }}</span>
     </div>
   </div>
 
@@ -69,7 +69,7 @@
       </span>
     </div>
     <div class="listing__specs">
-      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg>{{ (service.images | length) + 1 }} portfolio shots</span>
+      <span class="listing__spec"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg>{{ (service.images | length) + 1 }} {{ 'portfolio shot' if (service.images | length) + 1 == 1 else 'portfolio shots' }}</span>
     </div>
   </div>
 
@@ -98,10 +98,6 @@
 
 {% macro empty_state(kicker, title, copy, primary_href, primary_label, secondary_href=None, secondary_label=None, icon='sparkles') %}
 <div class="empty" data-reveal>
-  <span class="empty__art">
-    <svg class="i" aria-hidden="true"><use href="#i-{{ icon }}"></use></svg>
-  </span>
-  <p class="kicker">{{ kicker }}</p>
   <h3 class="h3">{{ title }}</h3>
   <p class="muted" style="max-width:52ch">{{ copy }}</p>
   <div class="row" style="margin-top:var(--s2)">

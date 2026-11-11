@@ -9,13 +9,6 @@
 {%- endif -%}
 {% endblock %}
 
-{% block admin_kicker %}
-{%- if active_tab == 'leads' -%}Moderate · Enquiries
-{%- elif active_tab in ['flats', 'services'] -%}Moderate · Queue
-{%- else -%}Console · Today
-{%- endif -%}
-{% endblock %}
-
 {% block admin_page_description %}
 {%- if active_tab == 'flats' -%}Approve, reject, edit or remove submitted apartments.
 {%- elif active_tab == 'services' -%}Approve, reject, edit or remove interior studio profiles.
@@ -54,57 +47,39 @@
 {% set worked_leads = stats.total_leads - stats.new_leads %}
 {% set approval_percent = ((approved_assets / total_assets) * 100) | round(0, 'floor') | int if total_assets else 0 %}
 {% set queue_pressure = ((pending_assets / total_assets) * 100) | round(0, 'floor') | int if total_assets else 0 %}
+{% set rejected_percent = ((rejected_assets / total_assets) * 100) | round(0, 'floor') | int if total_assets else 0 %}
 {% set lead_progress = ((worked_leads / stats.total_leads) * 100) | round(0, 'floor') | int if stats.total_leads else 0 %}
-
-<nav class="tabs" aria-label="Console tabs">
-  <a class="tabs__link {{ 'is-on' if active_tab == 'dashboard' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='dashboard') }}">
-    <svg class="i" aria-hidden="true"><use href="#i-activity"></use></svg> Overview
-  </a>
-  <a class="tabs__link {{ 'is-on' if active_tab == 'flats' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='flats') }}">
-    <svg class="i" aria-hidden="true"><use href="#i-building"></use></svg> Flats
-    <span class="tabs__n">{{ stats.total_flats }}</span>
-  </a>
-  <a class="tabs__link {{ 'is-on' if active_tab == 'services' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='services') }}">
-    <svg class="i" aria-hidden="true"><use href="#i-couch"></use></svg> Studios
-    <span class="tabs__n">{{ stats.total_services }}</span>
-  </a>
-  <a class="tabs__link {{ 'is-on' if active_tab == 'leads' else '' }}" href="{{ url_for('admin.admin_dashboard', tab='leads') }}">
-    <svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> Leads
-    <span class="tabs__n {{ 'tabs__n--hot' if stats.new_leads else '' }}">{{ stats.total_leads }}</span>
-  </a>
-</nav>
 
 {% if active_tab == 'dashboard' %}
 <!-- ========================================================== OVERVIEW -->
-<div class="kpi-row">
-  <article class="kpi">
+<div class="kpi-band">
+  <article class="kpi-cell">
     <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Listings</p>
     <p class="kpi__value" data-count="{{ total_assets }}">{{ total_assets }}</p>
-    <p class="kpi__foot muted">{{ stats.total_flats }} flats · {{ stats.total_services }} studios</p>
     {% if trend %}<svg class="spark" data-spark="{{ trend.listings | tojson }}" aria-hidden="true"></svg>{% endif %}
+    <p class="kpi__foot muted">{{ stats.total_flats }} flats · {{ stats.total_services }} studios</p>
   </article>
 
-  <article class="kpi kpi--sage">
+  <article class="kpi-cell kpi-cell--sage">
     <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-check-circle"></use></svg> Live on site</p>
     <p class="kpi__value" data-count="{{ approved_assets }}">{{ approved_assets }}</p>
-    <div class="progress-rail"><span class="progress-rail__fill" data-bar="{{ approval_percent }}"></span></div>
+    <div class="bar"><span class="bar__fill" data-bar="{{ approval_percent }}"></span></div>
     <p class="kpi__foot muted">{{ approval_percent }}% approved</p>
   </article>
 
-  <article class="kpi kpi--amber">
+  <article class="kpi-cell kpi-cell--amber">
     <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-clock"></use></svg> Awaiting review</p>
     <p class="kpi__value" data-count="{{ pending_assets }}">{{ pending_assets }}</p>
-    <div class="progress-rail"><span class="progress-rail__fill progress-rail__fill--amber" data-bar="{{ queue_pressure }}"></span></div>
     <p class="kpi__foot muted">
       {% if pending_assets %}<a href="{{ url_for('admin.admin_dashboard', tab='flats', status='pending') }}">Open the queue</a>{% else %}Queue is clear{% endif %}
     </p>
   </article>
 
-  <article class="kpi {{ 'kpi--hot' if stats.new_leads else '' }}">
+  <article class="kpi-cell {{ 'kpi-cell--hot' if stats.new_leads else '' }}">
     <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-inbox"></use></svg> New leads</p>
     <p class="kpi__value" data-count="{{ stats.new_leads }}">{{ stats.new_leads }}</p>
-    <p class="kpi__foot muted">{{ stats.total_leads }} total · {{ lead_progress }}% worked</p>
     {% if trend %}<svg class="spark" data-spark="{{ trend.leads | tojson }}" aria-hidden="true"></svg>{% endif %}
+    <p class="kpi__foot muted">{{ stats.total_leads }} total · {{ lead_progress }}% worked</p>
   </article>
 </div>
 
@@ -116,25 +91,29 @@
     </header>
 
     {% if trend %}
-    <div class="barchart" role="img" aria-label="Daily submissions and enquiries for the last 14 days">
-      {% for day in trend.days %}
-      <div class="barchart__col">
-        <div class="barchart__stack">
-          <span class="barchart__seg barchart__seg--clay" data-seg-height="{{ day.listings_pct }}" style="height:{{ day.listings_pct }}%"
-                title="{{ day.label }}: {{ day.listings }} listings"></span>
-          <span class="barchart__seg barchart__seg--sage" data-seg-height="{{ day.leads_pct }}" style="height:{{ day.leads_pct }}%"
-                title="{{ day.label }}: {{ day.leads }} leads"></span>
+    <div class="panel__body">
+      <div class="barchart" role="img" aria-label="Daily submissions and enquiries for the last 14 days">
+        {% for day in trend.days %}
+        <div class="barchart__col">
+          <div class="barchart__stack">
+            <span class="barchart__seg barchart__seg--clay" data-seg-height="{{ day.listings_pct }}" style="height:{{ day.listings_pct }}%"
+                  title="{{ day.label }}: {{ day.listings }} listings"></span>
+            <span class="barchart__seg barchart__seg--sage" data-seg-height="{{ day.leads_pct }}" style="height:{{ day.leads_pct }}%"
+                  title="{{ day.label }}: {{ day.leads }} leads"></span>
+          </div>
+          <span class="barchart__x">{{ day.short }}</span>
         </div>
-        <span class="barchart__x">{{ day.short }}</span>
+        {% endfor %}
       </div>
-      {% endfor %}
-    </div>
-    <div class="legend">
-      <span><i class="legend__sw legend__sw--clay"></i> Listings ({{ trend.total_listings }})</span>
-      <span><i class="legend__sw legend__sw--sage"></i> Leads ({{ trend.total_leads }})</span>
+      <div class="legend">
+        <span><i class="legend__sw legend__sw--clay"></i> Listings ({{ trend.total_listings }})</span>
+        <span><i class="legend__sw legend__sw--sage"></i> Leads ({{ trend.total_leads }})</span>
+      </div>
     </div>
     {% else %}
-    <p class="muted">No activity recorded yet.</p>
+    <div class="panel__body">
+      <p class="muted">No activity recorded yet. Submissions and enquiries will chart here.</p>
+    </div>
     {% endif %}
   </section>
 
@@ -142,35 +121,24 @@
     <header class="panel__head">
       <h2 class="h4"><svg class="i" aria-hidden="true"><use href="#i-target"></use></svg> Moderation mix</h2>
     </header>
-    <div class="rings">
-      <div class="ring-item">
-        <div class="ring" data-ring="{{ approval_percent }}" role="img" aria-label="{{ approval_percent }} percent approved">
-          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
-          <span class="ring__label"><strong>{{ approval_percent }}</strong><small>percent</small></span>
-        </div>
-        <p>Approved</p>
+    <div class="panel__body">
+      <div class="mixbar" role="img"
+           aria-label="{{ approval_percent }}% approved, {{ queue_pressure }}% pending, {{ rejected_percent }}% rejected">
+        <span class="mixbar__seg mixbar__seg--approved" style="width:{{ approval_percent }}%"></span>
+        <span class="mixbar__seg mixbar__seg--pending" style="width:{{ queue_pressure }}%"></span>
+        <span class="mixbar__seg mixbar__seg--rejected" style="width:{{ rejected_percent }}%"></span>
       </div>
-      <div class="ring-item">
-        <div class="ring ring--amber" data-ring="{{ queue_pressure }}" role="img" aria-label="{{ queue_pressure }} percent pending">
-          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
-          <span class="ring__label"><strong>{{ queue_pressure }}</strong><small>percent</small></span>
-        </div>
-        <p>Pending</p>
+      <div class="mixbar__scale" aria-hidden="true">
+        <span>0%</span><span>50%</span><span>100%</span>
       </div>
-      <div class="ring-item">
-        <div class="ring ring--sage" data-ring="{{ lead_progress }}" role="img" aria-label="{{ lead_progress }} percent of leads worked">
-          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring__track" cx="60" cy="60" r="50"></circle><circle class="ring__bar" cx="60" cy="60" r="50"></circle></svg>
-          <span class="ring__label"><strong>{{ lead_progress }}</strong><small>percent</small></span>
-        </div>
-        <p>Leads worked</p>
-      </div>
+
+      <dl class="kv kv--tight" style="margin-top:var(--s4)">
+        <div><dt>Approved</dt><dd>{{ approved_assets }} ({{ approval_percent }}%)</dd></div>
+        <div><dt>Pending review</dt><dd>{{ pending_assets }} ({{ queue_pressure }}%)</dd></div>
+        <div><dt>Rejected</dt><dd>{{ rejected_assets }} ({{ rejected_percent }}%)</dd></div>
+        <div><dt>Leads closed</dt><dd>{{ worked_leads }} of {{ stats.total_leads }}</dd></div>
+      </dl>
     </div>
-    <dl class="kv kv--tight">
-      <div><dt>Rejected</dt><dd>{{ rejected_assets }}</dd></div>
-      <div><dt>Flats pending</dt><dd>{{ stats.pending_flats }}</dd></div>
-      <div><dt>Studios pending</dt><dd>{{ stats.pending_services }}</dd></div>
-      <div><dt>Leads closed</dt><dd>{{ worked_leads }}</dd></div>
-    </dl>
   </section>
 </div>
 

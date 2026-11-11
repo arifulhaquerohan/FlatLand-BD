@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fbf9f6">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#14120f">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}{% block admin_page_title %}Console{% endblock %} · FlatLand BD{% endblock %}</title>
 
@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600&display=swap&text=%E0%A7%B3">
 <link rel="stylesheet" href="{{ static_url('css/core.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/console.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/touch.css') }}">
 <link rel="icon" type="image/svg+xml" href="{{ static_url('img/logo-icon.svg') }}">
 {% block extra_css %}{% endblock %}
 </head>
@@ -127,13 +128,12 @@
       </button>
 
       <div class="topbar__heads">
-        <p class="topbar__kicker">{% block admin_kicker %}Console{% endblock %}</p>
         <h1 class="topbar__title">{{ self.admin_page_title() }}</h1>
         <p class="topbar__sub">{% block admin_page_description %}{% endblock %}</p>
       </div>
 
       <div class="topbar__actions">
-        <button class="palette-trigger" type="button" data-palette-open>
+        <button class="palette-trigger" type="button" data-palette-open aria-label="Open command palette">
           <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
           <span>Jump to…</span>
           <kbd class="kbd">⌘K</kbd>

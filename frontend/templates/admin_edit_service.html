@@ -64,9 +64,8 @@
 
           <label class="field span-2">
             <span class="field__label">Description</span>
-            <textarea class="textarea" name="description" rows="8" id="service-description"
-                      data-counter-for="service-desc-count">{{ item.description or '' }}</textarea>
-            <span class="field__hint"><span id="service-desc-count">0</span> characters</span>
+            <textarea class="textarea" name="description" rows="8" id="service-description">{{ item.description or '' }}</textarea>
+            <span class="field__hint" data-counter-for="service-description"><span id="service-desc-count">0</span> characters</span>
           </label>
         </div>
 

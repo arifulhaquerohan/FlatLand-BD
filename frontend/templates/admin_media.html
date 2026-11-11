@@ -103,32 +103,32 @@
 </section>
 
 <!-- ===================== counts ===================== -->
-<div class="kpi-row">
-  <article class="kpi">
-    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg> Images in use</span>
-    <strong class="kpi__value" data-count="{{ media_stats.total }}">{{ media_stats.total }}</strong>
-    <span class="kpi__foot">Covers and galleries across flats and studios</span>
+<div class="kpi-band">
+  <article class="kpi-cell">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-images"></use></svg> Images in use</p>
+    <p class="kpi__value" data-count="{{ media_stats.total }}">{{ media_stats.total }}</p>
+    <p class="kpi__foot muted">Covers and galleries across flats and studios</p>
   </article>
 
-  <article class="kpi kpi--sage">
-    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg> On the CDN</span>
-    <strong class="kpi__value" data-count="{{ media_stats.cloudinary }}">{{ media_stats.cloudinary }}</strong>
-    <span class="progress-rail"><span class="progress-rail__fill" data-bar="{{ media_stats.cloud_percent }}"></span></span>
-    <span class="kpi__foot">{{ media_stats.cloud_percent }}% of all images</span>
+  <article class="kpi-cell kpi-cell--sage">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-cloud"></use></svg> On the CDN</p>
+    <p class="kpi__value" data-count="{{ media_stats.cloudinary }}">{{ media_stats.cloudinary }}</p>
+    <div class="bar"><span class="bar__fill" data-bar="{{ media_stats.cloud_percent }}"></span></div>
+    <p class="kpi__foot muted">{{ media_stats.cloud_percent }}% of all images</p>
   </article>
 
-  <article class="kpi {{ 'kpi--amber' if media_stats.local else '' }}">
-    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-database"></use></svg> On this server</span>
-    <strong class="kpi__value" data-count="{{ media_stats.local }}">{{ media_stats.local }}</strong>
-    <span class="kpi__foot">
+  <article class="kpi-cell {{ 'kpi-cell--amber' if media_stats.local else '' }}">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-database"></use></svg> On this server</p>
+    <p class="kpi__value" data-count="{{ media_stats.local }}">{{ media_stats.local }}</p>
+    <p class="kpi__foot muted">
       {% if media_stats.local %}Uploaded before the CDN was on. Re-upload to move them.{% else %}Nothing sitting on your disk.{% endif %}
-    </span>
+    </p>
   </article>
 
-  <article class="kpi">
-    <span class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-globe"></use></svg> Linked from elsewhere</span>
-    <strong class="kpi__value" data-count="{{ media_stats.external }}">{{ media_stats.external }}</strong>
-    <span class="kpi__foot">Pasted addresses, including stock photos</span>
+  <article class="kpi-cell">
+    <p class="kpi__label"><svg class="i" aria-hidden="true"><use href="#i-globe"></use></svg> Linked from elsewhere</p>
+    <p class="kpi__value" data-count="{{ media_stats.external }}">{{ media_stats.external }}</p>
+    <p class="kpi__foot muted">Pasted addresses, including stock photos</p>
   </article>
 </div>
 

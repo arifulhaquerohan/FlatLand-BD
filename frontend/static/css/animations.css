@@ -5,67 +5,6 @@
    Requires: core.css, site.css
    ========================================================================== */
 
-/* 1. ANIMATED GRADIENT MESH (hero background) ========================== */
-.hero__gradient-mesh {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.hero__gradient-mesh::before {
-  content: "";
-  position: absolute;
-  inset: -50%;
-  background:
-    conic-gradient(from 0deg at 30% 20%, rgba(213, 123, 76, .14), transparent 25%),
-    conic-gradient(from 120deg at 70% 60%, rgba(47, 107, 87, .10), transparent 25%),
-    conic-gradient(from 240deg at 50% 80%, rgba(224, 178, 94, .08), transparent 25%);
-  animation: mesh-rotate 40s linear infinite;
-  filter: blur(80px);
-}
-@keyframes mesh-rotate {
-  to { transform: rotate(360deg); }
-}
-
-/* 2. MORPHING BLOB SHAPES ============================================= */
-.morph-blob {
-  position: absolute;
-  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-  filter: blur(40px);
-  opacity: .65;
-  pointer-events: none;
-  will-change: transform, border-radius;
-  animation: blob-morph 18s var(--ease-in-out) infinite alternate;
-}
-.morph-blob--a {
-  width: 34vw; height: 34vw;
-  top: -8%; right: -5%;
-  background: rgba(213, 123, 76, .20);
-  animation-duration: 18s;
-}
-.morph-blob--b {
-  width: 28vw; height: 28vw;
-  bottom: 5%; left: -4%;
-  background: rgba(47, 107, 87, .16);
-  animation-duration: 22s;
-  animation-direction: alternate-reverse;
-}
-.morph-blob--c {
-  width: 20vw; height: 20vw;
-  top: 40%; left: 50%;
-  background: rgba(242, 181, 123, .14);
-  animation-duration: 26s;
-  animation-delay: -6s;
-}
-@keyframes blob-morph {
-  0%   { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0, 0) scale(1) rotate(0deg); }
-  25%  { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-  50%  { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: translate(3%, -5%) scale(1.08) rotate(6deg); }
-  75%  { border-radius: 50% 40% 50% 60% / 30% 60% 40% 70%; }
-  100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(-2%, 3%) scale(.96) rotate(-3deg); }
-}
-
 /* 3. PARTICLE CANVAS =================================================== */
 .particle-canvas {
   position: absolute;
@@ -75,8 +14,10 @@
 }
 
 /* 4. ENHANCED SCROLL REVEALS =========================================== */
+/* Hidden base states apply only when JS is present (html.js is set inline
+     in <head>): without JS the page must be fully readable. */
 /* Blur-up reveal */
-[data-reveal="blur-up"] {
+html.js [data-reveal="blur-up"]:not(.is-in) {
   opacity: 0;
   filter: blur(12px);
   transform: translateY(32px);
@@ -90,7 +31,7 @@
 }
 
 /* Scale entrance */
-[data-reveal="scale"] {
+html.js [data-reveal="scale"]:not(.is-in) {
   opacity: 0;
   transform: scale(.88);
   transition: opacity .7s var(--ease), transform .7s var(--ease);
@@ -102,7 +43,7 @@
 }
 
 /* Rotate entrance */
-[data-reveal="rotate"] {
+html.js [data-reveal="rotate"]:not(.is-in) {
   opacity: 0;
   transform: translateY(24px) rotate(-3deg);
   transition: opacity .7s var(--ease), transform .7s var(--ease);
@@ -114,7 +55,7 @@
 }
 
 /* Clip reveal */
-[data-reveal="clip"] {
+html.js [data-reveal="clip"]:not(.is-in) {
   clip-path: inset(100% 0 0 0);
   transition: clip-path .8s var(--ease);
   transition-delay: var(--reveal-delay, 0ms);
@@ -124,7 +65,7 @@
 }
 
 /* Stagger children of reveal-group with more dramatic delay */
-[data-reveal-group="stagger"] > * {
+html.js [data-reveal-group="stagger"]:not(.is-in) > * {
   opacity: 0;
   transform: translateY(28px);
   transition: opacity .6s var(--ease), transform .6s var(--ease);
@@ -192,32 +133,6 @@
   transform: translateY(-8px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
 }
 
-/* 7. FLOATING ELEMENTS ================================================ */
-.float-tag {
-  position: absolute;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-1);
-  font-size: .82rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  animation: float-tag 5s var(--ease-in-out) infinite;
-  animation-delay: var(--float-delay, 0s);
-}
-.float-tag .i { width: 16px; height: 16px; color: var(--clay-strong); flex: none; }
-
-@keyframes float-tag {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50%      { transform: translateY(-14px) rotate(2deg); }
-}
-
 /* 8. WAVE SECTION SEPARATORS ========================================== */
 .wave-separator {
   position: relative;
@@ -235,16 +150,6 @@
   fill: var(--wave-fill, var(--canvas));
 }
 .wave-separator--flip { transform: scaleY(-1); margin-top: 0; margin-bottom: -1px; }
-
-/* Animated wave */
-.wave-separator--animated path {
-  animation: wave-flow 8s linear infinite;
-}
-@keyframes wave-flow {
-  0%   { d: path("M0,40 C200,80 400,0 600,40 C800,80 1000,0 1200,40 L1200,100 L0,100 Z"); }
-  50%  { d: path("M0,50 C200,20 400,70 600,30 C800,60 1000,10 1200,50 L1200,100 L0,100 Z"); }
-  100% { d: path("M0,40 C200,80 400,0 600,40 C800,80 1000,0 1200,40 L1200,100 L0,100 Z"); }
-}
 
 /* 9. COUNTER SPRING ANIMATION ========================================= */
 .counter-spring {
@@ -287,24 +192,58 @@
 .testimonial-dots {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
   margin-top: var(--s4);
 }
-.testimonial-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--line-strong);
+.testimonial-dot.testimonial-dot {
+  /* 44px hit target (WCAG 2.5.5 / house bar); the visible dot is drawn by
+     ::before, so the row reads exactly as before. Doubled class keeps
+     specificity (0,2,0) over the blanket `button[type="button"]` rule. */
+  position: relative;
+  width: 44px; height: 44px;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
-  transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease),
-              width var(--t-mid) var(--ease);
 }
-.testimonial-dot.is-active {
-  background: var(--clay-strong);
-  width: 24px;
+.testimonial-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  transition: background var(--t-fast) var(--ease), width var(--t-mid) var(--ease);
+}
+.testimonial-dot:hover::before { background: var(--muted); }
+.testimonial-dot.is-active { width: 56px; border-radius: var(--r-pill); }
+.testimonial-dot.is-active::before { width: 24px; height: 8px; background: var(--clay-strong); }
+/* Explicit pause/play for the auto-advance — looping content must be
+   stoppable without hover or interaction luck. */
+.testimonial-pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  min-width: 44px; min-height: 44px;
+  margin-left: 10px;
   border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
+.testimonial-pause:hover { color: var(--ink); border-color: var(--line-strong); transform: scale(1.04); }
+.testimonial-pause:active { transform: scale(.96); }
+.testimonial-pause .i { width: 15px; height: 15px; }
+.testimonial-pause[aria-pressed="false"] .i-play { display: none; }
+.testimonial-pause[aria-pressed="true"] .i-pause { display: none; }
+.testimonial-pause[aria-pressed="true"] { color: var(--clay-strong); border-color: var(--clay-soft); }
 
 /* 11. STEP ANIMATION ================================================== */
 .step.has-anim {
@@ -361,33 +300,6 @@
 }
 
 @media (pointer: coarse) { .cursor-dot { display: none; } }
-
-/* 13. SCROLL-LINKED PROGRESS BAR ===================================== */
-.scroll-progress {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  z-index: 200;
-  background: transparent;
-  pointer-events: none;
-}
-.scroll-progress__bar {
-  height: 100%;
-  background: linear-gradient(90deg,
-    var(--clay-strong),
-    var(--sand),
-    var(--clay),
-    var(--sage)
-  );
-  background-size: 300% 100%;
-  animation: progress-shimmer 3s linear infinite;
-  transform-origin: left;
-  transform: scaleX(0);
-  will-change: transform;
-}
-@keyframes progress-shimmer {
-  to { background-position: 300% 0; }
-}
 
 /* 14. TEXT SHIMMER EFFECT ============================================= */
 .text-shimmer {
@@ -615,7 +527,6 @@
 
 /* 25. REDUCED MOTION ================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .morph-blob,
   .hero__gradient-mesh::before,
   .float-tag,
   .fab--wa.has-pulse,
@@ -624,7 +535,6 @@
   .cta-band.has-shimmer::before,
   .text-shimmer,
   .btn.has-shine::after,
-  .wave-separator--animated path,
   .scroll-progress__bar { animation: none !important; }
 
   .listing.has-glow::before,
@@ -650,8 +560,6 @@
 /* 26. PRINT =========================================================== */
 @media print {
   .morph-blob, .particle-canvas, .cursor-dot, .scroll-progress,
-  .wave-separator, .scroll-hint, .hero__gradient-mesh,
-  .float-tag { display: none !important; }
 }
 
 /* 27. MOBILE / iOS / TOUCH ================================================= */
@@ -683,7 +591,6 @@ a, button, [role="button"] { touch-action: manipulation; }
   .particle-canvas { display: none !important; }
   .cursor-dot { display: none !important; }
   .morph-blob { animation-duration: 40s !important; opacity: .35 !important; }
-  .hero__gradient-mesh::before { animation-duration: 80s !important; opacity: .5 !important; }
   .scroll-progress { height: 2px !important; }
   .float-tag { animation: none !important; }
   .fab--wa.has-pulse { animation: none !important; }
@@ -694,9 +601,15 @@ a, button, [role="button"] { touch-action: manipulation; }
   body { padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
 }
 
-/* Prevent horizontal overflow / horizontal scroll on touch */
-html, body { overflow-x: hidden !important; }
-.container, .shell { max-width: 100vw; }
+/* Prevent horizontal overflow / horizontal scroll on touch.
+   NOTE 1: never cap .shell with max-width:100vw here — it would override the
+   1180px content cap from core.css and stretch every section edge-to-edge.
+   NOTE 2: use `clip`, never `hidden`, on <html>. overflow-x:hidden on the root
+   makes iOS Safari treat the root as a scroll container and page scrolling
+   stops responding to touch. `clip` has no such side effect; browsers without
+   `clip` fall back to body's overflow-x:hidden from core.css (body-only is the
+   iOS-safe legacy pattern). */
+html { overflow-x: clip; }
 
 /* Smooth scroll on iOS for anchors */
 html { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
@@ -706,3 +619,51 @@ html { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 
 /* Ensure images don't overflow their containers */
 img { max-width: 100%; height: auto; display: block; }
+
+/* 26. CARD IMAGE FADE-IN ============================================= */
+/* Bridge for lazy listing photos on slow connections: JS adds
+   .img-lazy-fade to in-flight images and .is-loaded once they decode.
+   The transition line restates site.css's transform/filter transitions
+   (this file loads last, and the higher-specificity selector would
+   otherwise replace them and kill the hover zoom). */
+.listing__media img.img-lazy-fade {
+  opacity: 0;
+  transition: transform .9s var(--ease), filter .6s var(--ease), opacity .26s var(--ease);
+}
+.listing__media img.img-lazy-fade.is-loaded { opacity: 1; }
+
+/* 27. OFF-SCREEN LOOP PAUSE ========================================== */
+/* Infinite decorative loops (shimmer) stop burning paint while their
+   section is out of view; animations.js toggles .is-paused via IO. */
+.text-shimmer.is-paused,
+.cta-band.has-shimmer.is-paused::before { animation-play-state: paused; }
+
+/* 28. MOBILE STAGGER TUNING ========================================== */
+/* 1-column lists read top-down: the shared 100ms/child wait lets the last
+   card trail half a second behind the first. Tighten to 40ms steps and cap
+   the tail (children 7+ previously got 0ms — first, not last). */
+@media (max-width: 640px) {
+  [data-reveal-group="stagger"].is-in > *:nth-child(1) { transition-delay: 0ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(2) { transition-delay: 40ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(3) { transition-delay: 80ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(4) { transition-delay: 120ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(5) { transition-delay: 160ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(6) { transition-delay: 200ms; }
+  [data-reveal-group="stagger"].is-in > *:nth-child(n+7) { transition-delay: 240ms; }
+}
+
+/* 29. REDUCED MOTION ADDITIONS ======================================= */
+@media (prefers-reduced-motion: reduce) {
+  .drawer.is-open .drawer__link { animation: none !important; }
+  .listing__media img.img-lazy-fade { opacity: 1; transition: none; }
+}
+
+/* 30. MOBILE HERO PROOF ALIGNMENT ==================================== */
+/* "Interior studios" wraps to two lines at phone widths while its
+   neighbours fit one, dragging its value below the others' baseline.
+   Reserving the second line keeps the three values on one optical row.
+   Lives here (not site.css) because animations.css owns the
+   .hero__proof > div rules and loads last. */
+@media (max-width: 640px) {
+  .hero__proof dt { min-height: 2.9em; }
+}

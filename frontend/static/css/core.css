@@ -23,11 +23,11 @@
 
   --ink: #1f2722;
   --ink-2: #38453d;
-  --muted: #6b7a72;
+  --muted: #616f66;
   --faint: #94a09a;
 
   --clay: #d57b4c;         /* display / decorative */
-  --clay-strong: #c26532;  /* text & solid buttons (AA on white) */
+  --clay-strong: #a8541f;  /* text & solid buttons — AA (≥4.5:1) on every light surface, white-on-it 5.3:1 */
   --clay-deep: #9d481b;
   --sand: #f2b57b;         /* soft accent pillow color */
   --clay-soft: rgba(213, 123, 76, .12);
@@ -103,11 +103,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Clip sideways overflow without creating a second scroll container that
+     traps the sticky masthead. Keep hidden as a legacy-browser fallback. */
   overflow-x: hidden;
+  overflow-x: clip;
   overscroll-behavior-y: none;
 }
 
-body.is-locked { overflow: hidden; }
+body.is-locked { overflow: hidden; overflow: clip; }
 
 img, svg, video, iframe { display: block; max-width: 100%; }
 img { height: auto; }
@@ -190,6 +193,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s6) 0; }
   --clay-strong: #e2884e;
   --on-clay: #1a1005;
 }
+/* light-on-dark reads lighter: give prose a touch more leading */
+.section--ink .lead { line-height: 1.66; }
 
 .stack { display: grid; gap: var(--s4); }
 .stack--sm { gap: var(--s2); }
@@ -220,7 +225,7 @@ h1, h2, h3, h4 {
   line-height: 1.08;
   letter-spacing: -.015em;
   color: var(--ink);
-  font-variation-settings: "SOFT" 0, "WONK" 0;
+  text-wrap: balance;
 }
 
 .display {
@@ -238,6 +243,7 @@ h1, h2, h3, h4 {
   color: var(--ink-2);
   line-height: 1.6;
   max-width: 62ch;
+  text-wrap: pretty;
 }
 .body-sm { font-size: .92rem; }
 .muted { color: var(--muted); }
@@ -334,7 +340,7 @@ h1, h2, h3, h4 {
 .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
 .btn:hover::after { opacity: 1; }
 .btn:active { transform: translateY(0) scale(.985); }
-.btn:focus-visible { box-shadow: var(--ring); outline: none; }
+.btn:focus-visible { box-shadow: var(--ring); outline: 2px solid var(--clay-strong); outline-offset: 2px; }
 .btn[disabled], .btn[aria-disabled="true"] { opacity: .55; pointer-events: none; }
 
 .btn--ghost {
@@ -454,7 +460,7 @@ h1, h2, h3, h4 {
   text-transform: uppercase;
   color: var(--muted);
 }
-.hint { font-size: .8rem; color: var(--faint); }
+.hint { font-size: .8rem; color: var(--muted); }
 .field-error { font-size: .82rem; color: var(--rose); font-weight: 500; }
 
 .input, .select, .textarea {
@@ -472,7 +478,7 @@ h1, h2, h3, h4 {
   appearance: none;
 }
 .textarea { min-height: 132px; resize: vertical; line-height: 1.55; }
-.input::placeholder, .textarea::placeholder { color: var(--faint); }
+.input::placeholder, .textarea::placeholder { color: var(--muted); }
 .input:hover, .select:hover, .textarea:hover { border-color: var(--muted); }
 .input:focus, .select:focus, .textarea:focus {
   outline: none;
@@ -924,7 +930,7 @@ h1, h2, h3, h4 {
   padding: 4px 12px;
   border-radius: var(--r-pill);
   background: var(--sand);
-  color: var(--clay-deep);
+  color: #7a350f; /* --clay-deep reads 3.5:1 on sand; this tint passes 4.98:1 */
   font-size: .72rem;
   font-weight: 600;
   letter-spacing: .08em;
@@ -940,7 +946,8 @@ h1, h2, h3, h4 {
   margin: 0 0 22px;
   font-size: .92rem;
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 .maint-pop .btn { width: 100%; }
 @media (max-width: 640px) {
@@ -977,6 +984,9 @@ h1, h2, h3, h4 {
   position: sticky;
   top: 0;
   z-index: 110;
+  /* 0 in browser Safari; pads below the status bar when launched from
+     the home screen (standalone) or in landscape on notched phones. */
+  padding-top: env(safe-area-inset-top, 0px);
   background: color-mix(in srgb, var(--canvas) 84%, transparent);
   backdrop-filter: blur(14px) saturate(150%);
   border-bottom: 1px solid transparent;
@@ -994,7 +1004,7 @@ h1, h2, h3, h4 {
   gap: var(--s4);
   height: var(--nav-h);
 }
-.brand { display: inline-flex; align-items: center; gap: 11px; }
+.brand { display: inline-flex; align-items: center; gap: 11px; min-height: 44px; }
 .brand__mark { width: 38px; height: 38px; flex: none; object-fit: contain; }
 .brand__text { display: grid; line-height: 1.05; }
 .brand__name {
@@ -1004,7 +1014,7 @@ h1, h2, h3, h4 {
   letter-spacing: -.01em;
 }
 .brand__sub {
-  font-size: .62rem;
+  font-size: .7rem;
   letter-spacing: .22em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1086,6 +1096,7 @@ h1, h2, h3, h4 {
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   transform: translateY(-16px) translateZ(0);
   will-change: transform, opacity;
@@ -1096,6 +1107,19 @@ h1, h2, h3, h4 {
               visibility var(--t-mid);
 }
 .drawer.is-open { opacity: 1; visibility: visible; transform: translate3d(0, 0, 0); }
+/* Links stagger in as the sheet opens. A finished animation (fill: backwards
+   releases it) hands transform back to the element, so :active press
+   feedback keeps working the moment the entrance is done. */
+.drawer.is-open .drawer__link { animation: drawer-link-in .26s var(--ease) backwards; }
+.drawer.is-open .drawer__link:nth-child(1) { animation-delay: 40ms; }
+.drawer.is-open .drawer__link:nth-child(2) { animation-delay: 80ms; }
+.drawer.is-open .drawer__link:nth-child(3) { animation-delay: 120ms; }
+.drawer.is-open .drawer__link:nth-child(4) { animation-delay: 160ms; }
+.drawer.is-open .drawer__link:nth-child(5) { animation-delay: 200ms; }
+@keyframes drawer-link-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
 .drawer__link {
   display: flex;
   align-items: center;
@@ -1120,6 +1144,13 @@ h1, h2, h3, h4 {
   .brand { margin-right: auto; }
 }
 
+/* Between the full nav and the drawer: tighten so links never wrap */
+@media (min-width: 1001px) and (max-width: 1140px) {
+  .navlinks { gap: 0; }
+  .navlink { padding: 10px 9px; font-size: .88rem; }
+  .masthead__inner { gap: 16px; }
+  .nav-actions .btn { padding: 10px 16px; }
+}
 .dock {
   position: fixed;
   bottom: 0;
@@ -1127,7 +1158,8 @@ h1, h2, h3, h4 {
   z-index: 100;
   display: none;
   padding: 6px 12px calc(6px + var(--safe-b));
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  /* 96% glass: the dock rides over hero photography — labels must hold 4.5:1 */
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-top: 1px solid var(--line);
@@ -1147,7 +1179,7 @@ h1, h2, h3, h4 {
   font-size: .68rem;
   font-weight: 600;
   letter-spacing: .03em;
-  color: var(--muted);
+  color: var(--ink-2);
   min-height: 48px;
   transition: transform var(--t-fast) var(--ease), color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
   user-select: none;
@@ -1165,7 +1197,19 @@ h1, h2, h3, h4 {
   transform: translateY(-2px);
   color: var(--clay-strong);
 }
-.dock__item--accent { color: var(--clay-strong); }
+.dock__item--accent {
+  /* The Quote CTA must never read as a second active tab: fill it. Only
+     the current tab keeps terracotta text. */
+  align-self: center;
+  height: 44px;
+  padding-block: 7px;
+  border-radius: var(--r-pill);
+  background: var(--clay-strong);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(168, 84, 31, .28);
+}
+.dock__item--accent .i { color: #fff; }
+.dock__item--accent:active { background: var(--clay-deep); }
 @media (max-width: 760px) {
   .dock { display: flex; }
   body.has-dock { padding-bottom: calc(64px + var(--safe-b)); }
@@ -1195,7 +1239,13 @@ h1, h2, h3, h4 {
   gap: var(--s6);
 }
 @media (max-width: 900px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .footer__grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  /* brand and studio span the page; the two link columns pair up so the
+     footer stops being a four-block scroll of its own */
+  .footer__grid { grid-template-columns: 1fr 1fr; gap: var(--s6) var(--s4); }
+  .footer__grid > :first-child,
+  .footer__grid > :last-child { grid-column: 1 / -1; }
+}
 .footer h4 {
   font-size: .74rem;
   font-family: var(--font-ui);
@@ -1207,7 +1257,23 @@ h1, h2, h3, h4 {
 }
 .footer a:not(.btn) { color: rgba(246, 241, 234, .72); transition: color var(--t-fast) var(--ease); }
 .footer a:not(.btn):hover { color: #e2884e; }
+.footer a:not(.btn):active { color: #e2884e; }
 .footer__links { display: grid; gap: 11px; font-size: .94rem; }
+/* phones: rows carry the spacing, so every link is a full 44px tap target */
+@media (max-width: 760px) {
+  .footer__links { gap: 0; font-size: .88rem; }
+  .footer__links a { display: flex; align-items: center; min-height: 44px; }
+  .footer h4 { margin-bottom: var(--s2); }
+}
+/* chunky half-width call + WhatsApp CTAs; stack them on very narrow phones */
+@media (max-width: 560px) {
+  .footer__grid .row.row--tight { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .footer__grid .row.row--tight .btn { width: 100%; }
+  .footer__directions { width: 100%; }
+}
+@media (max-width: 380px) {
+  .footer__grid .row.row--tight { grid-template-columns: 1fr; }
+}
 .footer__bottom {
   position: relative;
   margin-top: var(--s7);
@@ -1221,14 +1287,21 @@ h1, h2, h3, h4 {
   font-size: .85rem;
   color: rgba(246, 241, 234, .5);
 }
-.footer .map-frame {
-  border-radius: var(--r-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .14);
-  aspect-ratio: 16 / 10;
-  background: rgba(255, 255, 255, .05);
+@media (max-width: 560px) {
+  /* Lives after the base rule: it used to sit before it in the file and
+     lost the cascade, so the legal lines stayed left-flush, not centred. */
+  .footer__bottom { justify-content: center; text-align: center; }
 }
-.footer .map-frame iframe { width: 100%; height: 100%; border: 0; filter: grayscale(.35) contrast(1.05); }
+.footer__address {
+  font-style: normal;
+  line-height: 1.55;
+  color: rgba(246, 241, 234, .72);
+  max-width: 30ch;
+}
+.footer__address strong { display: block; color: #f6f1ea; margin-bottom: 2px; }
+.footer__directions { margin-top: 2px; }
+.footer .btn--ghost { --btn-fg: #f6f1ea; border-color: rgba(255, 255, 255, .3); }
+.footer .btn--ghost:hover { color: #e2884e; border-color: #e2884e; }
 
 .fab-stack {
   position: fixed;
@@ -1237,6 +1310,13 @@ h1, h2, h3, h4 {
   z-index: 95;
   display: grid;
   gap: 10px;
+  transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+/* the footer carries the same actions — the stack gets out of its way */
+body.footer-in-view .fab-stack {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
 }
 @media (max-width: 760px) { .fab-stack { bottom: calc(84px + var(--safe-b)); } }
 .fab {
@@ -1297,17 +1377,18 @@ h1, h2, h3, h4 {
 }
 
 /* Scroll reveal */
-[data-reveal] {
+/* Hidden base state applies only when JS is present (html.js set inline in
+   <head>): without JS the page must be fully readable. */
+html.js [data-reveal]:not(.is-in) {
   opacity: 0;
   transform: translateY(26px);
   transition: opacity .7s var(--ease), transform .7s var(--ease);
   transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
 }
-[data-reveal="left"] { transform: translateX(-30px); }
-[data-reveal="right"] { transform: translateX(30px); }
-[data-reveal="zoom"] { transform: scale(.94); }
-[data-reveal="blur"] { filter: blur(8px); transform: translateY(14px); }
+html.js [data-reveal="left"]:not(.is-in) { transform: translateX(-30px); }
+html.js [data-reveal="right"]:not(.is-in) { transform: translateX(30px); }
+html.js [data-reveal="zoom"]:not(.is-in) { transform: scale(.94); }
+html.js [data-reveal="blur"]:not(.is-in) { filter: blur(8px); transform: translateY(14px); }
 [data-reveal].is-in {
   opacity: 1;
   transform: none;
@@ -1462,3 +1543,41 @@ figure,figcaption{margin:0}
    groove border and min-width:min-content also break mobile grids */
 fieldset{border:0;padding:0;margin:0;min-width:0}
 legend{display:block;width:100%;padding:0;float:none}
+
+/* Shared confirm dialog (admin console + member dashboard) — moved from
+   console.css so base.html pages can host the same dialog. */
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 205;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 9, 7, .72);
+  backdrop-filter: blur(5px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--t-fast) linear, visibility var(--t-fast);
+}
+.confirm.is-open { opacity: 1; visibility: visible; }
+.confirm__box {
+  width: min(430px, 100%);
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  transform: scale(.96);
+  transition: transform var(--t-mid) var(--ease);
+}
+.confirm.is-open .confirm__box { transform: none; }
+.confirm__ic {
+  display: grid;
+  place-items: center;
+  width: 46px; height: 46px;
+  border-radius: var(--r-pill);
+  background: var(--rose-soft);
+  color: var(--rose);
+}

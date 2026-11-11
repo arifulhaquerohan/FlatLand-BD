@@ -38,6 +38,9 @@
 
     <form class="authx__form" method="POST" action="{{ url_for('public.login') }}" data-veil>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {# the sign-in guard attached ?next=<where you were going>; the fixed action
+         drops the query string, so the target travels inside the form instead #}
+      <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
 
       <div class="authx__field" style="--d:0">
         <label class="authx__label" for="login-id">Username or mobile number</label>
@@ -45,7 +48,7 @@
           <svg class="i input-wrap__ic" aria-hidden="true" data-login-ic><use href="#i-user"></use></svg>
           <input class="input input--with-ic" id="login-id" type="text" name="identifier" required autofocus
                  autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off"
-                 placeholder="rohan_dhaka or 01712345678" data-login-id>
+                 placeholder="rohan_dhaka or 01712345678" data-login-id enterkeyhint="next">
         </span>
         <span class="field__hint" data-login-hint>Your username, your 11-digit mobile number, or your email.</span>
       </div>
@@ -54,7 +57,7 @@
         <label class="authx__label" for="login-password">Password</label>
         <span class="pw-wrap">
           <input class="input" type="password" name="password" required autocomplete="current-password"
-                 placeholder="••••••••" id="login-password">
+                 placeholder="••••••••" id="login-password" enterkeyhint="done">
           <button class="pw-toggle" type="button" data-pw-toggle="#login-password" aria-label="Show password">
             <svg class="i" aria-hidden="true"><use href="#i-eye"></use></svg>
           </button>

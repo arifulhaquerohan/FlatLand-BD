@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Set before any CSS paints: scroll-reveal base states only hide content
+     when this class is present, so a no-JS visit sees the whole page. -->
+<script>document.documentElement.classList.add('js');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#fbf9f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FlatLand BD">
 
 {% set page_title = (self.title() | striptags | trim) %}
 {% set page_description = meta_description if meta_description is defined else default_meta_description %}
@@ -35,13 +42,14 @@
 {% if cloudinary_cloud_name %}<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>{% endif %}
 <link rel="dns-prefetch" href="https://images.unsplash.com">
 {% block preload %}{% endblock %}
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600&family=Sora:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Sora:wght@400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600&display=swap&text=%E0%A7%B3">
 <link rel="stylesheet" href="{{ static_url('css/core.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/site.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/animations.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/touch.css') }}">
 <link rel="icon" type="image/svg+xml" href="{{ static_url('img/logo-icon.svg') }}">
-<link rel="apple-touch-icon" href="{{ static_url('img/logo-icon.svg') }}">
+<link rel="apple-touch-icon" href="{{ static_url('img/logo-touch-180.png') }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 {% block extra_css %}{% endblock %}
 
@@ -86,7 +94,6 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="progress-rail" aria-hidden="true"><div class="progress-rail__fill" data-progress></div></div>
-<div class="scroll-progress" aria-hidden="true"><div class="scroll-progress__bar"></div></div>
 
 <header class="masthead" data-masthead>
   <div class="shell masthead__inner">
@@ -184,7 +191,37 @@
 </noscript>
 {% endif %}
 
+<!-- Shared confirm dialog (app.js initConfirm) — used by every destructive action -->
+<div class="confirm" data-confirm-dialog role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="confirm__box">
+    <span class="confirm__ic"><svg class="i" aria-hidden="true"><use href="#i-alert-triangle"></use></svg></span>
+    <h2 class="h3" id="confirm-title" data-confirm-title>Please confirm</h2>
+    <p class="muted" data-confirm-body>This action cannot be undone.</p>
+    <div class="row row--end">
+      <button class="btn btn--ghost btn--sm" type="button" data-confirm-cancel>Cancel</button>
+      <button class="btn btn--danger btn--sm" type="button" data-confirm-ok>Yes, continue</button>
+    </div>
+  </div>
+</div>
+
 <div class="toasts" data-toasts role="status" aria-live="polite"></div>
+
+<script>
+/* Anonymous page-view beacon: path + referrer only, one POST per render.
+   The server buckets the visitor into a daily-rotating hash - nothing that
+   identifies a person survives the day. Skips the admin console. */
+(function () {
+  try {
+    if (location.pathname.indexOf('/console-x7') === 0) return;
+    var data = JSON.stringify({ p: location.pathname, r: document.referrer });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/collect', new Blob([data], { type: 'application/json' }));
+    } else if (window.fetch) {
+      fetch('/collect', { method: 'POST', body: data, keepalive: true, credentials: 'omit' });
+    }
+  } catch (e) {}
+})();
+</script>
 
 <main id="main">
   {% block content %}{% endblock %}
@@ -230,13 +267,13 @@
 
       <div class="stack stack--sm">
         <h4>Visit the studio</h4>
-        <div class="map-frame">
-          <iframe src="https://www.google.com/maps?q=Hashem%20Mansion%2C%20Level-1%2C%2048%20Kazi%20Nazrul%20Islam%20Ave%2C%20Dhaka%201215%2C%20Bangladesh&amp;output=embed"
-                  title="FlatLand BD office location" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-        <p class="body-sm" style="color:rgba(246,241,234,.66)">
+        <address class="footer__address">
+          <strong>FlatLand BD Studio</strong>
           Hashem Mansion, Level-1, 48 Kazi Nazrul Islam Ave, Dhaka 1215
-        </p>
+        </address>
+        <a class="btn btn--sm btn--ghost footer__directions" href="https://www.google.com/maps?q=Hashem+Mansion,+Level-1,+48+Kazi+Nazrul+Islam+Ave,+Dhaka+1215,+Bangladesh" target="_blank" rel="noopener">
+          <svg class="i" aria-hidden="true"><use href="#i-map-pin"></use></svg> Get directions
+        </a>
       </div>
     </div>
 

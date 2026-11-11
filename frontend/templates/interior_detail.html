@@ -7,6 +7,14 @@
 {% set meta_image = optimized_image_url(hero_image, 1200) %}
 {% set meta_type = 'product' %}
 
+{% set stage_sizes = '(min-width: 1000px) 60vw, 92vw' %}
+{% set stage_srcset = optimized_image_srcset(hero_image, (640, 900, 1400, 1600)) %}
+{% block preload %}
+<link rel="preload" as="image" fetchpriority="high"
+      href="{{ optimized_image_url(hero_image, 900) }}"
+      {% if stage_srcset %}imagesrcset="{{ stage_srcset }}" imagesizes="{{ stage_sizes }}"{% endif %}>
+{% endblock %}
+
 {% block title %}{{ service.provider_name }} — {{ service.service_type }} | FlatLand BD{% endblock %}
 
 {% block content %}
@@ -29,6 +37,7 @@
           <figure class="gallery__stage">
             <img data-gallery-stage
                  src="{{ optimized_image_url(gallery[0], 1400) }}"
+                 {% if stage_srcset %}srcset="{{ stage_srcset }}" sizes="{{ stage_sizes }}"{% endif %}
                  alt="{{ service.provider_name }} portfolio" width="1400" height="933"
                  fetchpriority="high" decoding="async"
                  data-zoom data-zoom-group="studio-{{ service.id }}">
@@ -45,6 +54,7 @@
             {% for shot in gallery %}
             <button class="gallery__thumb {{ 'is-active' if loop.first else '' }}" type="button" role="listitem"
                     data-gallery-thumb
+                    data-zoom data-zoom-group="studio-{{ service.id }}" data-zoom-src="{{ optimized_image_url(shot, 1400) }}"
                     data-src="{{ optimized_image_url(shot, 1400) }}"
                     data-srcset="{{ optimized_image_srcset(shot, (640, 900, 1400)) }}"
                     aria-label="View portfolio image {{ loop.index }}">
@@ -155,7 +165,6 @@
   <div class="shell">
     <div class="section-head" data-reveal="blur-up">
       <div>
-        <p class="kicker"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg> Also consider</p>
         <h2 class="h1">Other studios in this space</h2>
       </div>
       <a class="link-arrow" href="{{ url_for('public.interior') }}">

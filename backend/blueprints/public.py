@@ -1,3 +1,6 @@
+import hashlib
+import re
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
@@ -5,10 +8,10 @@ from sqlalchemy import or_
 from sqlalchemy.orm import load_only, selectinload
 from flask_mail import Message
 
-from ..models import db, User, Flat, InteriorService, FlatImage, InteriorImage, Lead
+from ..models import db, User, Flat, InteriorService, FlatImage, InteriorImage, Lead, PageView
 from ..forms import LoginForm, ContactForm, RegisterForm
-from ..extensions import limiter, mail
-from ..utils import get_cached_value, extract_youtube_id, build_youtube_embed, build_youtube_watch, summarize_text, save_uploaded_image, parse_image_urls, coerce_float, coerce_int, collect_uploaded_images, delete_listing_media
+from ..extensions import csrf, limiter, mail
+from ..utils import get_cached_value, extract_youtube_id, build_youtube_embed, build_youtube_watch, summarize_text, save_uploaded_image, parse_image_urls, coerce_float, coerce_int, collect_uploaded_images, delete_listing_media, invalidate_cached_value, ALL_LISTING_CACHE_KEYS, ADMIN_CACHE_KEYS
 
 public_bp = Blueprint('public', __name__)
 
@@ -91,6 +94,36 @@ def index():
         meta_image=current_app.config['DEFAULT_OG_IMAGE'],
     )
 
+@public_bp.route('/collect', methods=['POST'])
+@csrf.exempt
+@limiter.limit("120 per minute")
+def collect():
+    """Anonymous page-view beacon. Records path + device class only; the
+    visitor hash is a daily-rotating digest so nobody is trackable across
+    days. Bots and console traffic are ignored."""
+    data = request.get_json(silent=True) or {}
+    path = str(data.get('p', ''))[:200]
+    if not path.startswith('/') or '://' in path or path.startswith('//'):
+        return ('', 204)
+    if path.startswith('/console-x7') or path.startswith('/collect'):
+        return ('', 204)
+    ua = (request.user_agent.string or '')[:250]
+    if not ua or re.search(r'bot|crawl|spider|slurp|preview|headless', ua, re.I):
+        return ('', 204)
+    ref = str(data.get('r', ''))[:300]
+    ref_host = ''
+    if ref.startswith('http'):
+        from urllib.parse import urlparse
+        try: ref_host = (urlparse(ref).netloc or '')[:120]
+        except Exception: ref_host = ''
+    device = 'mobile' if re.search(r'Mobile|Android|iPhone', ua, re.I) else (
+        'tablet' if re.search(r'iPad|Tablet', ua, re.I) else 'desktop')
+    salt = current_app.config.get('SECRET_KEY', '') + datetime.utcnow().strftime('%Y%m%d')
+    vhash = hashlib.sha256((salt + (request.remote_addr or '') + ua).encode('utf-8', 'replace')).hexdigest()[:32]
+    db.session.add(PageView(path=path, referrer_host=ref_host, device=device, visitor_hash=vhash))
+    db.session.commit()
+    return ('', 204)
+
 @public_bp.route('/robots.txt')
 def robots():
     admin_path = current_app.config.get('ADMIN_PATH', 'admin')
@@ -106,26 +139,31 @@ def robots():
 
 @public_bp.route('/sitemap.xml')
 def sitemap():
+    xml = get_cached_value('sitemap_xml', 3600, _build_sitemap)
+    return Response(xml, mimetype='application/xml')
+
+
+def _build_sitemap():
+    from ..utils import dhaka_now, dhaka_date
     pages = []
-    today = datetime.utcnow().date().isoformat()
+    today = dhaka_now().date().isoformat()
     static_pages = ['public.index', 'public.flats', 'public.interior', 'public.login']
     for endpoint in static_pages:
         pages.append({'loc': url_for(endpoint, _external=True), 'lastmod': today})
 
     flats = Flat.query.filter_by(status='approved').with_entities(Flat.id, Flat.created_at).all()
     for flat_id, created_at in flats:
-        lastmod = created_at.date().isoformat() if created_at else today
+        lastmod = dhaka_date(created_at).isoformat() if created_at else today
         pages.append({'loc': url_for('public.flat_detail', id=flat_id, _external=True), 'lastmod': lastmod})
 
     services = InteriorService.query.filter_by(status='approved').with_entities(
         InteriorService.id, InteriorService.created_at
     ).all()
     for service_id, created_at in services:
-        lastmod = created_at.date().isoformat() if created_at else today
+        lastmod = dhaka_date(created_at).isoformat() if created_at else today
         pages.append({'loc': url_for('public.interior_detail', id=service_id, _external=True), 'lastmod': lastmod})
 
-    xml = render_template('sitemap.xml', pages=pages)
-    return Response(xml, mimetype='application/xml')
+    return render_template('sitemap.xml', pages=pages)
 
 @public_bp.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute", methods=["POST"])
@@ -164,10 +202,14 @@ def login():
         
         if user and user.check_password(password):
             login_user(user, remember=remember)
-            from ..utils import safe_next_path
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(safe_next_path())
+            # Honour the ?next= target the guard attached (e.g. a deep link
+            # into the console), but only when it is a same-origin path. The
+            # template also mirrors it into a hidden field because the form
+            # action drops the query string.
+            next_page = (request.args.get('next') or request.form.get('next') or '').strip()
+            if next_page.startswith('/') and not next_page.startswith('//') \
+                    and '://' not in next_page and '..' not in next_page:
+                return redirect(next_page)
             if user.is_admin():
                 return redirect(url_for('admin.admin_dashboard'))
             return redirect(url_for('public.dashboard'))
@@ -212,6 +254,8 @@ def register():
 
         if not full_name:
             return reject('Please enter your full name.')
+        if len(full_name) > 120:
+            return reject('Full name must be 120 characters or fewer.')
 
         username_ok, username_result = validate_username(raw_username)
         if not username_ok:
@@ -233,6 +277,10 @@ def register():
 
         # Email is entirely optional - only checked when one was provided.
         if email:
+            if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+                return reject('That email address does not look right. Leave it blank or fix it.')
+            if len(email) > 120:
+                return reject('Email must be 120 characters or fewer.')
             if User.query.filter_by(email_hash=generate_blind_index(email)).first():
                 flash('An account with this email already exists. Please sign in.', 'danger')
                 return redirect(url_for('public.login'))
@@ -306,9 +354,11 @@ def delete_own_listing(item_type, id):
         item = InteriorService.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     else:
         abort(404)
-    delete_listing_media(item)
     db.session.delete(item)
     db.session.commit()
+    # Only touch storage after the row is really gone - a failed commit must
+    # not leave a live listing pointing at permanently deleted photos.
+    delete_listing_media(item)
     flash('Listing deleted.', 'success')
     return redirect(url_for('public.dashboard'))
 
@@ -317,21 +367,31 @@ def delete_own_listing(item_type, id):
 def contact():
     form = ContactForm()
     
-    name = request.form.get('name', '').strip()
+    name = request.form.get('name', '').strip()[:120]
     phone = request.form.get('phone', '').strip()
-    email = request.form.get('email', '').strip().lower()
+    email = request.form.get('email', '').strip().lower()[:120]
     contact_info = request.form.get('contact', '').strip() # Fallback
     interest = request.form.get('interest', '').strip()[:40]
     message = request.form.get('message', '').strip()
-    budget = request.form.get('budget', '').strip()
-    service_type = request.form.get('service_type', '').strip()
-    timeline = request.form.get('timeline', '').strip()
+    budget = request.form.get('budget', '').strip()[:50]
+    service_type = request.form.get('service_type', '').strip()[:100]
+    timeline = request.form.get('timeline', '').strip()[:50]
 
-    if contact_info and not phone and not email:
-        if '@' in contact_info:
-            email = contact_info.lower()
-        else:
-            phone = contact_info
+    # Keep only digits and a leading + so tel:/wa.me links work whatever the
+    # visitor typed (+880 1712-345-678 -> +8801712345678).
+    phone = re.sub(r'[^\d+]', '', phone)[:20]
+
+    # A contact channel is only useful if it can actually be dialled or answered.
+    if phone and sum(c.isdigit() for c in phone) < 6:
+        flash('That phone number looks too short — please double-check it.', 'warning')
+        return redirect(request.referrer or url_for('public.index'))
+    if email and not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        flash('That email address does not look right — please double-check it.', 'warning')
+        return redirect(request.referrer or url_for('public.index'))
+
+    if len(message) > 1200:
+        flash('Your message is a bit long — the limit is 1200 characters. Please shorten it and send again.', 'warning')
+        return redirect(request.referrer or url_for('public.index'))
 
     meta_lines = []
     if budget: meta_lines.append(f"Budget: {budget}")
@@ -357,7 +417,8 @@ def contact():
     )
     db.session.add(lead)
     db.session.commit()
-    
+    invalidate_cached_value(*ADMIN_CACHE_KEYS)
+
     # 2. EMAIL NOTIFICATIONS (Send email if mail is configured)
     try:
         if current_app.config.get('MAIL_SERVER') and current_app.config.get('ADMIN_EMAIL'):
@@ -549,10 +610,21 @@ def post_listing():
         if form_type == 'flat':
             raw_video_url = request.form.get('video_url', '').strip()
             video_url = raw_video_url if extract_youtube_id(raw_video_url) else None
+            title = request.form.get('title', '').strip()
+            location = request.form.get('location', '').strip()
+            description = request.form.get('description', '').strip()
+            # Server-side guard behind the wizard's client-side required fields:
+            # a direct POST must never be able to queue a blank listing.
+            missing = [label for label, value in (
+                ('title', title), ('location', location), ('description', description),
+            ) if not value]
+            if missing:
+                flash('Please fill in the %s before submitting.' % ' and '.join(missing), 'warning')
+                return redirect(url_for('public.post_listing'))
             new_flat = Flat(
-                title=request.form.get('title', '').strip(), location=request.form.get('location', '').strip(),
+                title=title, location=location,
                 price=coerce_float(request.form.get('price'), 0), bhk=coerce_int(request.form.get('bhk'), 0),
-                area_sqft=coerce_int(request.form.get('area'), 0), description=request.form.get('description', '').strip(),
+                area_sqft=coerce_int(request.form.get('area'), 0), description=description,
                 image_url=uploaded_url or request.form.get('image_url', '').strip(), video_url=video_url, user_id=current_user.id
             )
             new_flat.status = status
@@ -563,9 +635,18 @@ def post_listing():
         elif form_type == 'interior':
             if not current_user.is_admin():
                 abort(403)
+            provider_name = request.form.get('provider_name', '').strip()
+            service_type_field = request.form.get('service_type', '').strip()
+            description = request.form.get('description', '').strip()
+            missing = [label for label, value in (
+                ('studio name', provider_name), ('speciality', service_type_field), ('description', description),
+            ) if not value]
+            if missing:
+                flash('Please fill in the %s before submitting.' % ' and '.join(missing), 'warning')
+                return redirect(url_for('public.post_listing'))
             new_service = InteriorService(
-                provider_name=request.form.get('provider_name', '').strip(), service_type=request.form.get('service_type', '').strip(),
-                starting_price=coerce_float(request.form.get('starting_price'), 0), description=request.form.get('description', '').strip(),
+                provider_name=provider_name, service_type=service_type_field,
+                starting_price=coerce_float(request.form.get('starting_price'), 0), description=description,
                 portfolio_url=request.form.get('portfolio_url', '').strip(), image_url=uploaded_url or request.form.get('image_url', '').strip(),
                 user_id=current_user.id
             )
@@ -576,11 +657,12 @@ def post_listing():
                 if url and url != new_service.image_url: db.session.add(InteriorImage(service=new_service, image_url=url))
         else: abort(400)
 
-        skipped = len(invalid) if isinstance(invalid, (list, tuple, set)) else int(invalid or 0)
+        skipped = int(invalid or 0)
         if skipped:
             flash('%d photo(s) were skipped. Use PNG, JPG or WEBP files under the upload limit.' % skipped, 'warning')
 
         db.session.commit()
+        invalidate_cached_value(*ADMIN_CACHE_KEYS)
         flash('Listing posted successfully! It will appear after admin approval.', 'success')
         return redirect(url_for('public.dashboard'))
     # Members publish flats only. Interior studio profiles stay admin-managed.

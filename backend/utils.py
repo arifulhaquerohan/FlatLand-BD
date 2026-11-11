@@ -2,6 +2,7 @@ import os
 import time
 import re
 import json
+from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
 from functools import wraps
@@ -17,6 +18,22 @@ LEAD_STATUSES = {'new', 'contacted', 'closed'}
 NOCOOKIE_EMBED_BASE = 'https://www.youtube-nocookie.com/embed/'
 SHORT_WATCH_BASE = 'https://youtu.be/'
 CLOUDINARY_DELIVERY_RE = re.compile(r'^(https?:)?//res\.cloudinary\.com/[^/]+/(image|video)/upload/')
+
+# Bangladesh is UTC+6 all year (no DST). Rows store naive UTC timestamps, so
+# a fixed offset turns them into local Dhaka days for trends and sitemaps.
+DHAKA_UTC_OFFSET = timedelta(hours=6)
+
+
+def dhaka_now():
+    """Naive datetime in Bangladesh local time."""
+    return datetime.utcnow() + DHAKA_UTC_OFFSET
+
+
+def dhaka_date(utc_dt):
+    """Calendar date a UTC timestamp falls on, as seen from Bangladesh."""
+    if not utc_dt:
+        return None
+    return (utc_dt + DHAKA_UTC_OFFSET).date()
 
 def is_allowed_image(filename):
     if not filename or '.' not in filename:
@@ -126,18 +143,11 @@ def save_uploaded_image(file_storage):
         return local_url
         
     except Exception as e:
+        # Never store bytes PIL could not parse as an image: the normal path
+        # resizes, transcodes to WEBP and strips EXIF, and this fallback would
+        # skip all of it. The caller already counts this as a skipped photo.
         print(f"Error optimizing image: {e}")
-        try:
-            file_storage.stream.seek(0)
-            upload_dir = os.path.join(current_app.static_folder, 'uploads')
-            os.makedirs(upload_dir, exist_ok=True)
-            safe_name = secure_filename(file_storage.filename)
-            timestamp = int(time.time() * 1000)
-            filename = f"{timestamp}_{safe_name}"
-            file_storage.save(os.path.join(upload_dir, filename))
-            return url_for('static', filename=f'uploads/{filename}')
-        except:
-            return None
+        return None
 
 def parse_image_urls(raw_text):
     if not raw_text:
@@ -146,8 +156,10 @@ def parse_image_urls(raw_text):
     return [part.strip() for part in parts if part.strip()]
 
 def collect_uploaded_images(files):
+    """Return (accepted_urls, skipped_count). Callers only test truthiness of
+    the second value or show it as a count, so an int serves both."""
     urls = []
-    invalid = False
+    invalid = 0
     for file_storage in files:
         if not file_storage or not file_storage.filename:
             continue
@@ -155,7 +167,7 @@ def collect_uploaded_images(files):
         if uploaded:
             urls.append(uploaded)
         else:
-            invalid = True
+            invalid += 1
     return urls, invalid
 
 def coerce_float(value, fallback=0.0):
@@ -299,6 +311,30 @@ def get_cached_value(key, ttl_seconds, factory):
         except Exception:
             pass
     return value
+
+
+def invalidate_cached_value(*keys):
+    """Drop cached entries after a data mutation.
+
+    Without this, an approved listing would stay invisible on the public site
+    for up to the cache TTL, and console counters would lag behind actions.
+    """
+    redis_client = get_redis_client()
+    for key in keys:
+        _STATS_CACHE.pop(key, None)
+        if redis_client:
+            try:
+                redis_client.delete(build_cache_key(key))
+            except Exception:
+                pass
+
+
+# Standard invalidation sets so every mutation clears exactly what it changed.
+# sitemap_xml rides along: an approved listing must enter the sitemap at once,
+# not when the hour-old cache happens to expire.
+PUBLIC_CACHE_KEYS = ('public_stats', 'public_featured_flats_v1', 'public_featured_services_v1')
+ADMIN_CACHE_KEYS = ('admin_stats', 'admin_trend_v1')
+ALL_LISTING_CACHE_KEYS = PUBLIC_CACHE_KEYS + ADMIN_CACHE_KEYS + ('sitemap_xml',)
 
 def safe_next_path():
     path = request.full_path if request.query_string else request.path

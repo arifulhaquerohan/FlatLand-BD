@@ -137,3 +137,18 @@ class Lead(db.Model):
     message = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='new', index=True) # new, contacted, closed
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class PageView(db.Model):
+    """One page view from the public beacon. No PII: the visitor hash is a
+    daily-rotating salted digest of IP+UA, so counts are honest but the
+    visitor cannot be tracked across days or identified."""
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(200), nullable=False, index=True)
+    referrer_host = db.Column(db.String(120))
+    device = db.Column(db.String(10))  # mobile / tablet / desktop
+    visitor_hash = db.Column(db.String(32))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (
+        db.Index('idx_pageview_created_device', 'created_at', 'device'),
+    )
